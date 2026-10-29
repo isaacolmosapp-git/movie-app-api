@@ -1,0 +1,19 @@
+{
+  "name": "movie-app-api",
+  "version": "1.0.0",
+  "description": "App web con consumo de API de peliculas",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isaacolmosapp-git/movie-app-api.git"
+  },
+  "author": "isaacolmosapp@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/isaacolmosapp-git/movie-app-api/issues"
+  },
+  "homepage": "https://github.com/isaacolmosapp-git/movie-app-api#readme"
+}
