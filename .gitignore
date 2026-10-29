@@ -149,4 +149,4 @@ vite.config.ts.timestamp-*
 .turbo
 
 # secrets.js
-./src/secrests.js
+./src/secrets.js
