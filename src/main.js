@@ -53,6 +53,7 @@ async function getCategoriesPreview() {
 
 async function getMovieById(movieId) {
     // Estado de carga
+    trailerBtn.classList.add('inactive');
     movieDetailSection.classList.add('is-loading');
     movieDetailTitle.textContent = '';
     movieDetailDescription.textContent = '';
@@ -67,12 +68,17 @@ async function getMovieById(movieId) {
     try {
         // append_to_response trae el reparto en la misma petición
         const { data: movie } = await api.get(`movie/${movieId}`, {
-            params: { append_to_response: 'credits' }
+            params: {
+                append_to_response: 'credits,videos',      // ← agrega videos
+                include_video_language: 'es,en,null'       // ← nuevo
+            }
         });
 
         movieDetailTitle.textContent = movie.title;
         movieDetailDescription.textContent = movie.overview;
         movieDetailScore.textContent = movie.vote_average;
+        bindDetailFavoriteButton(movie);
+        bindTrailerButton(movie.videos?.results);
 
         const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
         movieDetailMeta.textContent = [year, formatRuntime(movie.runtime)]
@@ -103,7 +109,7 @@ async function getMovieById(movieId) {
     } finally {
         movieDetailSection.classList.remove('is-loading');
     }
-    console.log(movieDetailMeta, movieDetailCastSection, movieDetailCastList);
+    
 
 }
 
@@ -158,7 +164,7 @@ function createMovies(movies, container, clean = true) {
 
     if (clean) {
         container.innerHTML = '';
-        observer.disconnect(); // deja de vigilar las imágenes anteriores
+        observer.disconnect();
     }
 
     movies.forEach(movie => {
@@ -180,14 +186,18 @@ function createMovies(movies, container, clean = true) {
         movieImg.addEventListener('error', () => {
             movieContainer.classList.remove('skeleton');
             movieContainer.classList.add('movie-container--noimg');
-            movieContainer.textContent = movie.title;
+            movieImg.remove();
+
+            const label = document.createElement('span');
+            label.textContent = movie.title;
+            movieContainer.appendChild(label);
         });
 
         movieContainer.appendChild(movieImg);
+        movieContainer.appendChild(createFavoriteButton(movie)); // ← nuevo
         container.appendChild(movieContainer);
 
         if (movie.poster_path) {
-            // La URL se guarda en data-src; el observer la pasa a src al acercarse
             movieImg.dataset.src = `${IMG_BASE_URL}${movie.poster_path}`;
             observer.observe(movieImg);
         } else {

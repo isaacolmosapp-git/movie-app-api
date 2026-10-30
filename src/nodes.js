@@ -15,6 +15,7 @@ const relatedMoviesContainer = document.querySelector('.relatedMovies-scrollCont
 // Elements
 const headerTitle = document.querySelector('.header-title');
 const arrowBtn = document.querySelector('.header-arrow');
+const homeBtn = document.querySelector('#homeBtn');
 const headerCategoryTitle = document.querySelector('.header-title--categoryView');
 
 const searchFormInput = document.querySelector('#searchForm input');
@@ -28,3 +29,12 @@ const movieDetailScore = document.querySelector('.movieDetail-score');
 const movieDetailMeta = document.querySelector('.movieDetail-meta');
 const movieDetailCastSection = document.querySelector('.cast-container');
 const movieDetailCastList = document.querySelector('.cast-list');
+
+const favoritesPreviewSection = document.querySelector('#favoritesPreview');
+const favoritesContainer = document.querySelector('.favoritesPreview-movieList');
+const movieDetailFavBtn = document.querySelector('.fav-btn--detail');
+
+const trailerBtn = document.querySelector('.trailer-btn');
+const trailerModal = document.querySelector('#trailerModal');
+const trailerFrame = document.querySelector('.trailer-frame');
+const trailerClose = document.querySelector('.trailer-close');

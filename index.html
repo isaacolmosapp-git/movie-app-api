@@ -17,6 +17,13 @@
     <span class="header-arrow inactive">&lt;</span>
     <h1 class="header-title">MovieApp</h1>
     <h1 class="header-title header-title--categoryView inactive">Acción</h1>
+    <button type="button" id="homeBtn" class="header-home inactive" aria-label="Ir al inicio">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 11l9-8 9 8" />
+        <path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10" />
+      </svg>
+    </button>
 
     <form id="searchForm" class="header-searchForm">
       <input type="text" placeholder="Vengadores" />
@@ -43,6 +50,13 @@
     </article>
   </section>
 
+  <section id="favoritesPreview" class="favoritesPreview-container is-empty">
+    <h2 class="favoritesPreview-title">Favoritos</h2>
+    <article class="favoritesPreview-movieList">
+      <!-- inyeccion de peliculas favoritas -->
+    </article>
+  </section>
+
   <section id="genericList" class="genericList-container inactive">
     <div class="movie-container">
       <!-- Iyeccion de peliculas por categoria -->
@@ -50,7 +64,16 @@
 
   <section id="movieDetail" class="movieDetail-container inactive">
     <h1 class="movieDetail-title"></h1>
-    <span class="movieDetail-score"></span>
+    <div class="movieDetail-actions">
+      <span class="movieDetail-score"></span> 
+      <button type="button" class="fav-btn fav-btn--detail">
+        <span class="fav-btn__icon" aria-hidden="true"></span>
+        <span class="fav-btn__label"></span>
+      </button>
+      <button type="button" class="trailer-btn inactive">
+        <span aria-hidden="true">▶</span> Ver tráiler
+      </button>
+    </div>
     <p class="movieDetail-meta"></p>
     <p class="movieDetail-description"></p>
 
@@ -83,10 +106,17 @@
   </section>
 
   <footer>Proyecto de consumo de API con JS</footer>
+
+  <dialog id="trailerModal" class="trailer-modal" aria-label="Tráiler">
+    <button type="button" class="trailer-close" aria-label="Cerrar tráiler">✕</button>
+    <div class="trailer-frame"></div>
+  </dialog>
   
   <script src="./src/secrets.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="./src/nodes.js"></script>
+  <script src="./src/favorites.js"></script>
+  <script src="./src/trailer.js"></script>
   <script src="./src/main.js"></script>
   <script src="./src/pagination.js"></script>
   <script src="./src/navigation.js"></script>

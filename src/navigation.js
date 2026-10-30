@@ -20,10 +20,15 @@ arrowBtn.addEventListener('click', () => {
     }
 });
 
+homeBtn.addEventListener('click', () => {
+    location.hash = '#home';
+});
+
 window.addEventListener('DOMContentLoaded', navigator, false);
 window.addEventListener('hashchange', navigator, false);
 
 function navigator() {
+    
 
     if (location.hash.startsWith('#trends')) {
         trendsPage();
@@ -50,11 +55,15 @@ function homePage() {
     headerTitle.classList.remove('inactive');
     headerCategoryTitle.classList.add('inactive');
     searchForm.classList.remove('inactive');
+    favoritesPreviewSection.classList.remove('inactive');
+    homeBtn.classList.add('inactive');
 
     trendingPreviewSection.classList.remove('inactive');
     categoriesPreviewSection.classList.remove('inactive');
     genericSection.classList.add('inactive');
     movieDetailSection.classList.add('inactive');
+
+    
 }
 
 function trendsPage() {
@@ -65,6 +74,8 @@ function trendsPage() {
     headerTitle.classList.add('inactive');
     headerCategoryTitle.classList.remove('inactive');
     searchForm.classList.add('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
 
     trendingPreviewSection.classList.add('inactive');
     categoriesPreviewSection.classList.add('inactive');
@@ -86,6 +97,8 @@ function searchPage() {
     headerTitle.classList.add('inactive');
     headerCategoryTitle.classList.add('inactive');
     searchForm.classList.remove('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
 
     trendingPreviewSection.classList.add('inactive');
     categoriesPreviewSection.classList.add('inactive');
@@ -106,6 +119,8 @@ function moviePage() {
     headerTitle.classList.add('inactive');
     headerCategoryTitle.classList.add('inactive');
     searchForm.classList.add('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
 
     trendingPreviewSection.classList.add('inactive');
     categoriesPreviewSection.classList.add('inactive');
@@ -125,6 +140,8 @@ function categoryPage() {
     headerTitle.classList.add('inactive');
     headerCategoryTitle.classList.remove('inactive');
     searchForm.classList.add('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
 
     trendingPreviewSection.classList.add('inactive');
     categoriesPreviewSection.classList.add('inactive');
@@ -144,6 +161,8 @@ function actorPage() {
     headerTitle.classList.add('inactive');
     headerCategoryTitle.classList.remove('inactive');
     searchForm.classList.add('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
 
     trendingPreviewSection.classList.add('inactive');
     categoriesPreviewSection.classList.add('inactive');
