@@ -312,6 +312,22 @@ section {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.movie-img.is-loaded {
+  opacity: 1;
+}
+
+/* Respaldo cuando no hay póster */
+.movie-container--noimg {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 @media (min-width: 720px) {
@@ -439,6 +455,131 @@ section {
   margin-top: 12px;
 }
 
+/* ---------- Detalle: metadatos y reparto ---------- */
+.movieDetail-meta {
+  min-height: 1.5em; /* evita saltos de diseño mientras carga */
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cast-title {
+  margin-bottom: 18px;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.cast-list {
+  display: flex;
+  gap: var(--gap);
+  overflow-x: auto;
+  padding-top: 8px;       /* espacio para el movimiento del hover */
+  margin-top: -8px; 
+  padding-bottom: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) transparent;
+}
+
+.cast-card {
+  flex: 0 0 96px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.cast-card:hover {
+  transform: translateY(-4px);
+}
+
+.cast-photo {
+  width: 96px;
+  height: 96px;
+  margin-inline: auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.cast-card:hover .cast-photo {
+  border-color: var(--accent);
+}
+
+.cast-photo--empty {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.cast-name {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.cast-character {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.cast-skeleton {
+  flex: 0 0 96px;
+  height: 96px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ---------- Cargar más ---------- */
+.loadMore-container {
+  grid-column: 1 / -1; /* ocupa toda la fila del grid */
+  display: flex;
+  justify-content: center;
+  min-height: 1px; /* el centinela necesita altura para ser detectado */
+  padding-top: 12px;
+}
+
+/* En móvil el botón no se muestra: carga el scroll infinito */
+.loadMore-btn {
+  display: none;
+  padding: 12px 32px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.loadMore-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.loadMore-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.genericList-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1024px) {
+  .loadMore-btn {
+    display: inline-flex;
+  }
+}
+
 /* ---------- Footer ---------- */
 footer {
   margin-top: auto;
@@ -458,4 +599,66 @@ footer {
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- Skeleton loading ---------- */
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+.skeleton,
+.movieDetail-container.is-loading .movieDetail-title,
+.movieDetail-container.is-loading .movieDetail-score,
+.movieDetail-container.is-loading .movieDetail-description {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-2) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Tarjetas de película: sin hover ni clicks mientras cargan */
+.movie-container--skeleton {
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Chips de categoría */
+.category-title--skeleton {
+  display: block;
+  height: 42px;
+  width: 90px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Detalle de película: bloques en lugar de texto */
+.movieDetail-container.is-loading .movieDetail-title,
+.movieDetail-container.is-loading .movieDetail-score,
+.movieDetail-container.is-loading .movieDetail-description {
+  color: transparent;
+  border-radius: var(--radius-sm);
+  user-select: none;
+}
+
+.movieDetail-container.is-loading .movieDetail-title {
+  min-height: 1.2em;
+  width: min(70%, 420px);
+}
+
+.movieDetail-container.is-loading .movieDetail-score {
+  min-width: 72px;
+  min-height: 34px;
+}
+
+.movieDetail-container.is-loading .movieDetail-score::before {
+  content: '';
+}
+
+.movieDetail-container.is-loading .movieDetail-description {
+  min-height: 6em;
 }

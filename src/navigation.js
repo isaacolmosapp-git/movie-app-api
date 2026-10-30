@@ -33,6 +33,8 @@ function navigator() {
         moviePage();
     } else if (location.hash.startsWith('#category=')) {
         categoryPage();
+    } else if (location.hash.startsWith('#actor=')) {
+        actorPage();
     } else {
         homePage();
     }
@@ -134,4 +136,26 @@ function categoryPage() {
     getMoviesByCategory(categoryId);
 } 
 
+function actorPage() {
 
+    headerSection.classList.remove('header-container--long');
+    headerSection.style.background = '';
+    arrowBtn.classList.remove('inactive');
+    headerTitle.classList.add('inactive');
+    headerCategoryTitle.classList.remove('inactive');
+    searchForm.classList.add('inactive');
+
+    trendingPreviewSection.classList.add('inactive');
+    categoriesPreviewSection.classList.add('inactive');
+    genericSection.classList.remove('inactive');
+    movieDetailSection.classList.add('inactive');
+
+    // Se separa en el primer guion: los nombres pueden tener guiones (p. ej. Jean-Claude)
+    const value = location.hash.split('=')[1];
+    const dash = value.indexOf('-');
+    const actorId = value.slice(0, dash);
+    const actorName = decodeURIComponent(value.slice(dash + 1));
+
+    headerCategoryTitle.textContent = actorName;
+    getMoviesByActor(actorId);
+}
