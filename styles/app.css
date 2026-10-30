@@ -105,7 +105,7 @@ h3 {
   top: 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px var(--gap);
   padding: 14px var(--pad);
@@ -133,6 +133,30 @@ h3 {
   background: var(--accent);
   color: var(--accent-contrast);
   transform: translateX(-2px);
+}
+
+.header-home {
+  grid-column: 3;
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.header-home:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  transform: scale(1.06);
+}
+
+@media (min-width: 720px) {
+  .header-home {
+    grid-column: 4;
+  }
 }
 
 .header-title {
@@ -203,7 +227,7 @@ h3 {
 
 @media (min-width: 720px) {
   .header-container {
-    grid-template-columns: auto auto 1fr;
+    grid-template-columns: auto auto 1fr auto;
   }
 
   .header-searchForm {
@@ -661,4 +685,179 @@ footer {
 
 .movieDetail-container.is-loading .movieDetail-description {
   min-height: 6em;
+}
+
+/* ---------- Favoritos ---------- */
+.favoritesPreview-container.is-empty {
+  display: none;
+}
+
+.favoritesPreview-title {
+  margin-bottom: 18px;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.favoritesPreview-movieList {
+  display: flex;
+  gap: var(--gap);
+  overflow-x: auto;
+  padding-top: 10px;   /* espacio para el hover de las tarjetas */
+  margin-top: -10px;
+  padding-bottom: 14px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) transparent;
+}
+
+.favoritesPreview-movieList::-webkit-scrollbar {
+  height: 8px;
+}
+
+.favoritesPreview-movieList::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+/* Botón corazón */
+.fav-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #fff;
+  background: rgba(15, 17, 23, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.fav-btn:hover {
+  transform: scale(1.12);
+  background: rgba(15, 17, 23, 0.8);
+}
+
+.fav-btn__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.fav-btn[aria-pressed="true"] .fav-btn__icon {
+  color: var(--accent-2);
+}
+
+/* Botón de la vista de detalle */
+.movieDetail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.fav-btn--detail {
+  position: static;
+  display: inline-flex;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.fav-btn--detail:hover {
+  background: var(--surface);
+}
+
+.fav-btn--detail[aria-pressed="true"] {
+  border-color: var(--accent-2);
+}
+
+.movieDetail-container.is-loading .fav-btn--detail {
+  visibility: hidden;
+}
+
+/* ---------- Tráiler ---------- */
+.trailer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--accent-contrast);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.trailer-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.movieDetail-container.is-loading .trailer-btn {
+  visibility: hidden;
+}
+
+.trailer-modal {
+  width: min(960px, 92vw);
+  margin: auto; /* tu reset pone margin: 0 y descentraría el <dialog> */
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow);
+}
+
+.trailer-modal::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.trailer-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.trailer-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.trailer-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #fff;
+  background: rgba(15, 17, 23, 0.6);
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.trailer-close:hover {
+  background: var(--accent);
+}
+
+/* Evita que la página se desplace por detrás del modal */
+body:has(dialog[open]) {
+  overflow: hidden;
 }
