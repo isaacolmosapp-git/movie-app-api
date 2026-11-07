@@ -34,12 +34,22 @@
   <section id="trendingPreview" class="trendingPreview-container">
     <div class="trendingPreview-header">
       <h2 class="trendingPreview-title">Tendencias</h2>
-      <button class="trendingPreview-btn">Ver más</button>
+      <button class="trendingPreview-btn">Ver todas</button>
     </div>
 
-    <article class="trendingPreview-movieList">
-        <!-- inyeccion de peliculas en tendencia -->
-    </article>
+    <div class="hero" role="region" aria-roledescription="carrusel" aria-label="Películas en tendencia">
+      <div class="hero-track" aria-live="polite">
+        <!-- inyeccion de slides de tendencias -->
+      </div>
+
+      <button type="button" class="hero-nav hero-nav--prev" aria-label="Slide anterior">‹</button>
+      <button type="button" class="hero-nav hero-nav--next" aria-label="Siguiente slide">›</button>
+
+      <div class="hero-controls">
+        <button type="button" class="hero-toggle" aria-label="Pausar carrusel">❚❚</button>
+        <div class="hero-dots"></div>
+      </div>
+    </div>
   </section>
 
   <section id="categoriesPreview" class="categoriesPreview-container">
@@ -57,12 +67,15 @@
     </article>
   </section>
 
+  <div id="homeRows"></div>
+
   <section id="genericList" class="genericList-container inactive">
     <div class="movie-container">
       <!-- Iyeccion de peliculas por categoria -->
   </section>
 
   <section id="movieDetail" class="movieDetail-container inactive">
+    <div class="movieDetail-hero">
     <h1 class="movieDetail-title"></h1>
     <div class="movieDetail-actions">
       <span class="movieDetail-score"></span> 
@@ -90,6 +103,7 @@
         <h3 class="category-title"></h3>
       </div>
     </article>
+    </div>
     <article class="cast-container">
       <h2 class="cast-title">Reparto</h2>
       <div class="cast-list"></div>
@@ -103,6 +117,7 @@
         
       </div>
     </article>
+    
   </section>
 
   <footer>Proyecto de consumo de API con JS</footer>
@@ -116,8 +131,11 @@
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="./src/nodes.js"></script>
   <script src="./src/favorites.js"></script>
+  <script src="./src/recent.js"></script>
   <script src="./src/trailer.js"></script>
+  <script src="./src/hero.js"></script>
   <script src="./src/main.js"></script>
+  <script src="./src/rows.js"></script>
   <script src="./src/pagination.js"></script>
   <script src="./src/navigation.js"></script>
 </body>

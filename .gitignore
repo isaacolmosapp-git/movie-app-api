@@ -148,5 +148,6 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
-# secrets.js
-./src/secrets.js
+# secrets.js file
+src/secrets.js
+

@@ -11,6 +11,15 @@ const trendingMoviesPreviewContainer = document.querySelector('.trendingPreview-
 const categoriesPreviewContainer = document.querySelector('.categoriesPreview-list');
 const movieDetailCategoriesList = document.querySelector('#movieDetail .categories-list');
 const relatedMoviesContainer = document.querySelector('.relatedMovies-scrollContainer');
+const homeRowsContainer = document.querySelector('#homeRows');
+
+// Hero
+const heroSection = document.querySelector('.hero');
+const heroTrack = document.querySelector('.hero-track');
+const heroDots = document.querySelector('.hero-dots');
+const heroPrev = document.querySelector('.hero-nav--prev');
+const heroNext = document.querySelector('.hero-nav--next');
+const heroToggle = document.querySelector('.hero-toggle');
 
 // Elements
 const headerTitle = document.querySelector('.header-title');

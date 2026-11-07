@@ -11,12 +11,24 @@ trendingBtn.addEventListener('click', () => {
     location.hash = '#trends';
 });
 
+let currentDepth = history.state?.depth ?? 0;
+
+function syncDepth() {
+    if (typeof history.state?.depth === 'number') {
+        currentDepth = history.state.depth; // volvió o avanzó a una entrada ya conocida
+    } else {
+        currentDepth += 1;                  // entrada nueva
+        history.replaceState({ depth: currentDepth }, '');
+    }
+}
+
+window.addEventListener('hashchange', syncDepth);
+
 arrowBtn.addEventListener('click', () => {
-    // Si hay historial previo dentro del mismo dominio, retrocedemos, si no, vamos al home
-    if (document.referrer && document.referrer.startsWith(window.location.origin) && history.length > 1) {
+    if (currentDepth > 0) {
         history.back();
     } else {
-        location.hash = '#home'; // O simplemente limpiar el hash o asignar '#'
+        location.hash = '#home'; // la página se abrió directamente en esta vista
     }
 });
 
@@ -40,6 +52,8 @@ function navigator() {
         categoryPage();
     } else if (location.hash.startsWith('#actor=')) {
         actorPage();
+    } else if (location.hash.startsWith('#list=')) {
+        listPage();
     } else {
         homePage();
     }
@@ -62,6 +76,7 @@ function homePage() {
     categoriesPreviewSection.classList.remove('inactive');
     genericSection.classList.add('inactive');
     movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.remove('inactive');
 
     
 }
@@ -81,6 +96,7 @@ function trendsPage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.remove('inactive');
     movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.add('inactive');
 
     headerCategoryTitle.textContent = 'Tendencias';
 
@@ -104,6 +120,7 @@ function searchPage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.remove('inactive');
     movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.add('inactive');
 
     const [_, query] = location.hash.split('=');
     getMoviesBySearch(decodeURIComponent(query));
@@ -126,6 +143,7 @@ function moviePage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.add('inactive');
     movieDetailSection.classList.remove('inactive');
+    homeRowsContainer.classList.add('inactive');
 
     const [_, movieId] = location.hash.split('=');
     getMovieById(movieId);
@@ -147,11 +165,45 @@ function categoryPage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.remove('inactive');
     movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.add('inactive');
 
-    const [categoryId, categoryName] = location.hash.split('=')[1].split('-');
-    headerCategoryTitle.textContent = decodeURIComponent(categoryName);
+    const value = location.hash.split('=')[1];
+    const dash = value.indexOf('-');
+    const categoryId = value.slice(0, dash);
+    const categoryName = decodeURIComponent(value.slice(dash + 1));
+
+    headerCategoryTitle.textContent = categoryName;
     getMoviesByCategory(categoryId);
-} 
+
+}
+
+function listPage() {
+    const rowId = location.hash.split('=')[1];
+    const row = HOME_ROWS.find(item => item.id === rowId);
+
+    if (!row || !row.endpoint) {
+        location.hash = '#home';
+        return;
+    }
+
+    headerSection.classList.remove('header-container--long');
+    headerSection.style.background = '';
+    arrowBtn.classList.remove('inactive');
+    headerTitle.classList.add('inactive');
+    headerCategoryTitle.classList.remove('inactive');
+    searchForm.classList.add('inactive');
+    favoritesPreviewSection.classList.add('inactive');
+    homeBtn.classList.remove('inactive');
+
+    trendingPreviewSection.classList.add('inactive');
+    categoriesPreviewSection.classList.add('inactive');
+    genericSection.classList.remove('inactive');
+    movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.add('inactive');
+
+    headerCategoryTitle.textContent = row.title;
+    getMoviesByRow(rowId);
+}
 
 function actorPage() {
 
@@ -168,6 +220,7 @@ function actorPage() {
     categoriesPreviewSection.classList.add('inactive');
     genericSection.classList.remove('inactive');
     movieDetailSection.classList.add('inactive');
+    homeRowsContainer.classList.add('inactive');
 
     // Se separa en el primer guion: los nombres pueden tener guiones (p. ej. Jean-Claude)
     const value = location.hash.split('=')[1];
