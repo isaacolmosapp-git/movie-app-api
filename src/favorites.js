@@ -109,6 +109,7 @@ function renderFavorites() {
 function refreshFavoritesUI() {
     renderFavorites();
     updateFavoriteButtons();
+    window.dispatchEvent(new Event('favorites:changed'));
 }
 
 // Cambios hechos en otra pestaña

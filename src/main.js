@@ -16,13 +16,12 @@ const IMG_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280';
 const IMG_PROFILE_URL = 'https://image.tmdb.org/t/p/w185';
 
 async function getTrendingMoviesPreview() {
-    createMovieSkeletons(trendingMoviesPreviewContainer);
-
+    showHeroSkeleton();
     try {
-        // axios ya parsea el JSON: los datos están en res.data
         const { data } = await api.get('trending/movie/day');
-        createMovies(data.results.slice(0, 10), trendingMoviesPreviewContainer);
+        renderHero(data.results);
     } catch (error) {
+        heroSection.classList.add('inactive');
         console.error('Error al cargar las películas en tendencia:', error.response?.status ?? error.message);
     }
 }
@@ -79,6 +78,7 @@ async function getMovieById(movieId) {
         movieDetailScore.textContent = movie.vote_average;
         bindDetailFavoriteButton(movie);
         bindTrailerButton(movie.videos?.results);
+        trackRecentlyViewed(movie);
 
         const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
         movieDetailMeta.textContent = [year, formatRuntime(movie.runtime)]
@@ -89,7 +89,10 @@ async function getMovieById(movieId) {
             movieDetailSection.style.setProperty('--movie-bg', `url(${IMG_BG_URL}${movie.poster_path})`);
         }
         if (movie.backdrop_path) {
-            movieDetailSection.style.setProperty('--movie-bg-wide', `url(${IMG_BACKDROP_URL}${movie.backdrop_path})`);
+            movieDetailSection.style.setProperty(
+                '--movie-bg-wide',
+                `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`
+            );
         }
 
         createCategories(movie.genres, movieDetailCategoriesList);
