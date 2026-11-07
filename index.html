@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@700;800&family=Red+Hat+Display:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles/app.css" />
+  <link rel="stylesheet" href="./styles/app_updated.css" />
 
   <title>MovieApp</title>
 </head>
@@ -17,14 +17,7 @@
     <span class="header-arrow inactive">&lt;</span>
     <h1 class="header-title">MovieApp</h1>
     <h1 class="header-title header-title--categoryView inactive">Acción</h1>
-    <button type="button" id="homeBtn" class="header-home inactive" aria-label="Ir al inicio">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 11l9-8 9 8" />
-        <path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10" />
-      </svg>
-    </button>
-
+    <nav id="navDesktop" class="main-nav main-nav--desktop" aria-label="Principal"></nav>
     <form id="searchForm" class="header-searchForm">
       <input type="text" placeholder="Vengadores" />
       <button id="searchBtn">🔍</button>
@@ -61,7 +54,11 @@
   </section>
 
   <section id="favoritesPreview" class="favoritesPreview-container is-empty">
-    <h2 class="favoritesPreview-title">Favoritos</h2>
+    <div class="homeRow-header">
+      <h2 class="homeRow-title">Favoritos</h2>
+      <button type="button" class="homeRow-btn favoritesPreview-btn inactive">Ver todos</button>
+    </div>
+
     <article class="favoritesPreview-movieList">
       <!-- inyeccion de peliculas favoritas -->
     </article>
@@ -69,9 +66,67 @@
 
   <div id="homeRows"></div>
 
+  <section id="personInfo" class="personInfo-container inactive">
+    <div class="personInfo-card">
+      <div class="personInfo-photo" role="img"></div>
+
+      <div class="personInfo-head">
+        <h1 class="personInfo-name"></h1>
+        <p class="personInfo-meta inactive"></p>
+      </div>
+
+      <div class="personInfo-bioBlock">
+        <p class="personInfo-bio"></p>
+        <button type="button" class="personInfo-more inactive">Leer más</button>
+        <p class="personInfo-bioNote inactive"></p>
+      </div>
+    </div>
+
+    <div class="personInfo-tabs inactive"></div>
+  </section>
+  <section id="libraryPanel" class="library-container inactive">
+    <div class="library-header">
+      <h2 class="library-title">Mis listas</h2>
+      <button type="button" class="list-btn library-new">+ Nueva lista</button>
+    </div>
+    <div class="library-grid"></div>
+  </section>
+
+  <section id="listToolbar" class="listToolbar-container inactive">
+    <p class="listToolbar-count"></p>
+    <div class="listToolbar-actions">
+      <button type="button" class="list-btn list-btn--ghost listToolbar-rename">Renombrar</button>
+      <button type="button" class="list-btn list-btn--danger listToolbar-delete">Eliminar</button>
+    </div>
+  </section>
+
   <section id="genericList" class="genericList-container inactive">
     <div class="movie-container">
       <!-- Iyeccion de peliculas por categoria -->
+  </section>
+
+  <section id="peopleSection" class="people-container inactive">
+    <div class="people-tabs" role="group" aria-label="Tipo de persona">
+      <button type="button" class="personInfo-tab people-tab" data-kind="actors" aria-pressed="true">Actores</button>
+      <button type="button" class="personInfo-tab people-tab" data-kind="directors" aria-pressed="false">Directores</button>
+    </div>
+
+    <h2 class="people-title">Actores populares</h2>
+    <div class="people-list"></div>
+  </section>
+  <section id="searchPanel" class="searchPanel-container inactive">
+    <div class="searchPanel-block searchPanel-recent is-empty">
+      <div class="searchPanel-header">
+        <h2 class="searchPanel-title">Búsquedas recientes</h2>
+        <button type="button" class="searchPanel-clear">Borrar</button>
+      </div>
+      <ul class="searchPanel-recentList"></ul>
+    </div>
+
+    <div class="searchPanel-block">
+      <h2 class="searchPanel-title">Explorar por categoría</h2>
+      <div class="searchPanel-categories categories-list"></div>
+    </div>
   </section>
 
   <section id="movieDetail" class="movieDetail-container inactive">
@@ -86,6 +141,7 @@
       <button type="button" class="trailer-btn inactive">
         <span aria-hidden="true">▶</span> Ver tráiler
       </button>
+      <button type="button" class="list-add-btn inactive">+ Añadir a lista</button>
     </div>
     <p class="movieDetail-meta"></p>
     <p class="movieDetail-description"></p>
@@ -126,17 +182,53 @@
     <button type="button" class="trailer-close" aria-label="Cerrar tráiler">✕</button>
     <div class="trailer-frame"></div>
   </dialog>
+
+  <dialog id="listFormDialog" class="list-dialog" aria-labelledby="listFormTitle">
+  <form id="listForm" class="list-form" novalidate>
+    <h2 id="listFormTitle" class="list-dialog-title">Nueva lista</h2>
+    <input type="text" id="listFormInput" maxlength="40" autocomplete="off"
+           placeholder="Ej. Mis pelis de terror" aria-label="Nombre de la lista">
+    <p id="listFormError" class="list-error inactive" role="alert"></p>
+    <div class="list-dialog-actions">
+      <button type="button" id="listFormCancel" class="list-btn list-btn--ghost">Cancelar</button>
+      <button type="submit" class="list-btn">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="addToListDialog" class="list-dialog" aria-labelledby="addToListTitle">
+    <div class="list-form">
+      <h2 id="addToListTitle" class="list-dialog-title">Añadir a una lista</h2>
+      <ul id="addToListItems" class="addToList-items"></ul>
+      <form id="addToListForm" class="addToList-new" novalidate>
+        <input type="text" id="addToListInput" maxlength="40" autocomplete="off"
+              placeholder="Nueva lista…" aria-label="Nombre de la nueva lista">
+        <button type="submit" class="list-btn">Crear</button>
+      </form>
+      <p id="addToListError" class="list-error inactive" role="alert"></p>
+      <div class="list-dialog-actions">
+        <button type="button" id="addToListClose" class="list-btn">Listo</button>
+      </div>
+    </div>
+  </dialog>
+
+  <nav id="navMobile" class="main-nav main-nav--mobile" aria-label="Principal"></nav>
   
   <script src="./src/secrets.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
   <script src="./src/nodes.js"></script>
+  <script src="./src/media.js"></script>
   <script src="./src/favorites.js"></script>
   <script src="./src/recent.js"></script>
   <script src="./src/trailer.js"></script>
   <script src="./src/hero.js"></script>
   <script src="./src/main.js"></script>
   <script src="./src/rows.js"></script>
+  <script src="./src/people.js"></script>
   <script src="./src/pagination.js"></script>
+  <script src="./src/person.js"></script>
+  <script src="./src/search.js"></script>
+  <script src="./src/lists.js"></script>
   <script src="./src/navigation.js"></script>
 </body>
 </html>

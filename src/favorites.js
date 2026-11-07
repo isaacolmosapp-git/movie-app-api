@@ -1,15 +1,22 @@
 // Favoritos con localStorage
 //
-// Cargar DESPUÉS de nodes.js y ANTES de main.js.
-// Requiere: favoritesPreviewSection, favoritesContainer y movieDetailFavBtn (nodes.js).
+// Cargar DESPUÉS de nodes.js y media.js, y ANTES de main.js.
+// Requiere: favoritesPreviewSection, favoritesContainer, favoritesMoreBtn y movieDetailFavBtn
+//           (nodes.js), getMediaType (media.js).
 // createMovies (main.js) se usa solo en tiempo de ejecución, no al cargar el archivo.
+//
+// Cada favorito es { id, type, title, poster_path }. El tipo ('movie' | 'tv') es necesario
+// porque los id de películas y series se solapan.
 
 const FAVORITES_KEY = 'favorite_movies';
 
 function loadFavorites() {
     try {
         const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY));
-        return Array.isArray(stored) ? stored : [];
+        if (!Array.isArray(stored)) return [];
+
+        // Los favoritos guardados antes de existir el tipo eran todos películas
+        return stored.map(item => ({ ...item, type: item.type ?? 'movie' }));
     } catch {
         // JSON corrupto o localStorage no disponible (modo privado, etc.)
         return [];
@@ -27,19 +34,20 @@ function saveFavorites() {
     }
 }
 
-function isFavorite(movieId) {
-    return favoriteMovies.some(movie => movie.id === Number(movieId));
+function isFavorite(movieId, type = getMediaType()) {
+    return favoriteMovies.some(movie => movie.id === Number(movieId) && movie.type === type);
 }
 
 function toggleFavorite(movie) {
     const id = Number(movie.id);
+    const type = movie.type ?? getMediaType();
 
-    if (isFavorite(id)) {
-        favoriteMovies = favoriteMovies.filter(m => m.id !== id);
+    if (isFavorite(id, type)) {
+        favoriteMovies = favoriteMovies.filter(m => !(m.id === id && m.type === type));
     } else {
         // Solo se guarda lo necesario para dibujar la tarjeta; la más reciente va primero
         favoriteMovies = [
-            { id, title: movie.title, poster_path: movie.poster_path },
+            { id, type, title: movie.title, poster_path: movie.poster_path },
             ...favoriteMovies
         ];
     }
@@ -66,16 +74,19 @@ function setFavoriteButtonState(btn, active) {
 
 // Botón para las tarjetas de película
 function createFavoriteButton(movie) {
+    const type = movie.type ?? getMediaType();
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.classList.add('fav-btn');
     btn.dataset.favId = movie.id;
+    btn.dataset.favType = type;
     btn.innerHTML = '<span class="fav-btn__icon" aria-hidden="true"></span>';
-    setFavoriteButtonState(btn, isFavorite(movie.id));
+    setFavoriteButtonState(btn, isFavorite(movie.id, type));
 
     btn.addEventListener('click', event => {
         event.stopPropagation(); // que no abra el detalle de la película
-        toggleFavorite(movie);
+        toggleFavorite({ ...movie, type });
     });
 
     return btn;
@@ -83,26 +94,46 @@ function createFavoriteButton(movie) {
 
 // Botón de la vista de detalle (ya existe en el HTML)
 function bindDetailFavoriteButton(movie) {
+    const type = movie.type ?? getMediaType();
+
     movieDetailFavBtn.dataset.favId = movie.id;
-    movieDetailFavBtn.onclick = () => toggleFavorite(movie); // onclick evita acumular listeners
-    setFavoriteButtonState(movieDetailFavBtn, isFavorite(movie.id));
+    movieDetailFavBtn.dataset.favType = type;
+    // onclick evita acumular listeners
+    movieDetailFavBtn.onclick = () => toggleFavorite({
+        id: movie.id,
+        type,
+        title: movie.title,
+        poster_path: movie.poster_path
+    });
+    setFavoriteButtonState(movieDetailFavBtn, isFavorite(movie.id, type));
 }
 
 // Mantiene sincronizados todos los corazones visibles
 function updateFavoriteButtons() {
     document.querySelectorAll('.fav-btn').forEach(btn => {
-        setFavoriteButtonState(btn, isFavorite(btn.dataset.favId));
+        setFavoriteButtonState(btn, isFavorite(btn.dataset.favId, btn.dataset.favType));
     });
 }
 
 // ---------- Sección del home ----------
+const FAVORITES_PREVIEW_LIMIT = 12; // el resto se ve en la vista Favoritos
+
+favoritesMoreBtn.addEventListener('click', () => {
+    location.hash = '#favorites';
+});
+
 function renderFavorites() {
     // is-empty oculta la sección sin favoritos; la clase "inactive" la maneja el router
     favoritesPreviewSection.classList.toggle('is-empty', favoriteMovies.length === 0);
 
+    // "Ver todos" solo aparece si hay más favoritos de los que caben en la vista previa
+    const hasMore = favoriteMovies.length > FAVORITES_PREVIEW_LIMIT;
+    favoritesMoreBtn.classList.toggle('inactive', !hasMore);
+    favoritesMoreBtn.textContent = `Ver todos (${favoriteMovies.length})`;
+
     // Al quitar un favorito del medio de la lista, no se pierde la posición del scroll
     const scrollLeft = favoritesContainer.scrollLeft;
-    createMovies(favoriteMovies, favoritesContainer);
+    createMovies(favoriteMovies.slice(0, FAVORITES_PREVIEW_LIMIT), favoritesContainer);
     favoritesContainer.scrollLeft = scrollLeft;
 }
 

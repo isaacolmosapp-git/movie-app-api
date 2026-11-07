@@ -13,7 +13,7 @@ function pickTrailer(videos = []) {
     const score = video =>
         (video.type === 'Trailer' ? 4 : 0) +
         (video.official ? 2 : 0) +
-        (video.iso_639_1 === 'es' ? 1 : 0);
+        (video.iso_639_1 === 'en' ? 1 : 0);
 
     return candidates.sort((a, b) => score(b) - score(a))[0] ?? null;
 }

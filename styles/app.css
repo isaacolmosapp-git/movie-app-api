@@ -242,6 +242,102 @@ h3 {
   }
 }
 
+/* ---------- Search Section ---------- */
+
+.searchPanel-container {
+  display: grid;
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.searchPanel-block.is-empty {
+  display: none;
+}
+
+.searchPanel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  margin-bottom: 12px;
+}
+
+.searchPanel-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.searchPanel-block > .searchPanel-title {
+  margin-bottom: 14px;
+}
+
+.searchPanel-clear {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.searchPanel-clear:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.searchPanel-recentList {
+  display: grid;
+  list-style: none;
+}
+
+.searchRecent-item {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.searchRecent-query {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 4px;
+  text-align: left;
+  color: var(--text);
+}
+
+.searchRecent-query svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.searchRecent-query span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchRecent-remove {
+  padding: 8px 12px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.searchRecent-remove:hover {
+  color: var(--text);
+}
+
 /* ---------- Secciones ---------- */
 main,
 section {

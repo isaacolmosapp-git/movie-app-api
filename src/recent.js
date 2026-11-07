@@ -1,6 +1,9 @@
 // Películas vistas recientemente (localStorage)
 //
-// Cargar en cualquier punto después de nodes.js: todo se usa en tiempo de ejecución.
+// Cargar DESPUÉS de media.js; el resto se usa en tiempo de ejecución.
+//
+// Cada entrada es { id, type, title, poster_path }. El tipo ('movie' | 'tv') es necesario
+// porque los id de películas y series se solapan.
 
 const RECENT_KEY = 'recent_movies';
 const RECENT_LIMIT = 15;
@@ -8,7 +11,10 @@ const RECENT_LIMIT = 15;
 function loadRecent() {
     try {
         const stored = JSON.parse(localStorage.getItem(RECENT_KEY));
-        return Array.isArray(stored) ? stored : [];
+        if (!Array.isArray(stored)) return [];
+
+        // Las entradas guardadas antes de existir el tipo eran todas películas
+        return stored.map(item => ({ ...item, type: item.type ?? 'movie' }));
     } catch {
         // JSON corrupto o localStorage no disponible
         return [];
@@ -31,10 +37,17 @@ function getRecentlyViewed() {
 
 // Se llama al abrir el detalle de una película: la deja la primera y sin duplicados
 function trackRecentlyViewed(movie) {
-    const entry = { id: movie.id, title: movie.title, poster_path: movie.poster_path };
+    const entry = {
+        id: movie.id,
+        type: movie.type ?? getMediaType(),
+        title: movie.title,
+        poster_path: movie.poster_path
+    };
 
-    recentMovies = [entry, ...recentMovies.filter(item => item.id !== entry.id)]
-        .slice(0, RECENT_LIMIT);
+    recentMovies = [
+        entry,
+        ...recentMovies.filter(item => !(item.id === entry.id && item.type === entry.type))
+    ].slice(0, RECENT_LIMIT);
 
     saveRecent();
     window.dispatchEvent(new Event('recent:changed'));
