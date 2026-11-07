@@ -80,7 +80,7 @@ function getCachedList(key) {
 // Este listener se registra antes que el de navigation.js, así que corre
 // antes de que el router haga window.scrollTo(0, 0).
 window.addEventListener('hashchange', event => {
-    const oldKey = new URL(event.oldURL).hash;
+    const oldKey = `${getMediaType()}:${new URL(event.oldURL).hash}`;
     const entry = listCache.get(oldKey);
     if (entry) {
         entry.scrollY = window.scrollY;
@@ -137,7 +137,7 @@ function restoreList(state) {
 }
 
 function startPaginatedList(endpoint, params = {}) {
-    const key = location.hash;
+    const key = `${getMediaType()}:${location.hash}`;
 
     cancelPaginatedList(); // evita que una respuesta tardía pinte en la lista equivocada
 
@@ -259,6 +259,3 @@ function getMoviesBySearch(query) {
     return startPaginatedList('search/movie', { query });
 }
 
-function getMoviesByActor(actorId) {
-    return startPaginatedList('discover/movie', { with_cast: actorId });
-}

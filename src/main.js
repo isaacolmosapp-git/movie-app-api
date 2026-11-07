@@ -53,6 +53,7 @@ async function getCategoriesPreview() {
 async function getMovieById(movieId) {
     // Estado de carga
     trailerBtn.classList.add('inactive');
+    movieDetailListBtn.classList.add('inactive');
     movieDetailSection.classList.add('is-loading');
     movieDetailTitle.textContent = '';
     movieDetailDescription.textContent = '';
@@ -78,6 +79,7 @@ async function getMovieById(movieId) {
         movieDetailScore.textContent = movie.vote_average;
         bindDetailFavoriteButton(movie);
         bindTrailerButton(movie.videos?.results);
+        bindDetailListButton(movie); 
         trackRecentlyViewed(movie);
 
         const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
@@ -162,7 +164,7 @@ function getLazyObserver(container) {
     return observer;
 }
 
-function createMovies(movies, container, clean = true) {
+function createMovies(movies, container, clean = true, decorate = null) {
     const observer = getLazyObserver(container);
 
     if (clean) {
@@ -174,7 +176,7 @@ function createMovies(movies, container, clean = true) {
         const movieContainer = document.createElement('div');
         movieContainer.classList.add('movie-container', 'skeleton');
         movieContainer.addEventListener('click', () => {
-            location.hash = `#movie=${movie.id}`;
+            location.hash = `#${movie.type ?? 'movie'}=${movie.id}`;
         });
 
         const movieImg = document.createElement('img');
@@ -197,7 +199,8 @@ function createMovies(movies, container, clean = true) {
         });
 
         movieContainer.appendChild(movieImg);
-        movieContainer.appendChild(createFavoriteButton(movie)); // ← nuevo
+        movieContainer.appendChild(createFavoriteButton(movie));
+        if (decorate) decorate(movieContainer, movie);
         container.appendChild(movieContainer);
 
         if (movie.poster_path) {
