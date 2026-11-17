@@ -1,10 +1,10 @@
-# 🎬 MovieApp (Películas & Series)
+# MovieApp (Películas & Series)
 
 Aplicación web interactiva SPA (Single Page Application) para explorar y descubrir películas y series en tiempo real, consumiendo la API de **The Movie Database (TMDB)**. Desarrollada con JavaScript Vanilla (ES6+), HTML5 semántico y CSS moderno, ofreciendo una experiencia fluida, responsiva y adaptable.
 
 ---
 
-## ✨ Características y Funcionalidades
+## Características y Funcionalidades
 
 - **Selector Dinámico (Películas / Series):** Permite alternar la plataforma completa entre contenido cinematográfico y televisivo con un solo clic, adaptando automáticamente las categorías, tendencias, recomendaciones y el tema visual. La selección se persiste en `localStorage`.
 - **Hero Carrusel Interactivo:** Carrusel accesible en la página de inicio con controles de reproducción/pausa, paginación con puntos táctiles, soporte para gestos táctiles (swipe) y navegación por teclado.
@@ -17,7 +17,7 @@ Aplicación web interactiva SPA (Single Page Application) para explorar y descub
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **HTML5:** Estructura semántica y componentes nativos (`<dialog>`, `<picture>`, atributos ARIA).
 - **CSS3:** Variables CSS para temas dinámicos, Flexbox, Grid y diseño totalmente *Mobile First* y *Desktop Responsive*.
@@ -26,7 +26,7 @@ Aplicación web interactiva SPA (Single Page Application) para explorar y descub
 
 ---
 
-## 🚀 Cómo Ejecutar en Modo Desarrollador
+## Cómo Ejecutar en Modo Desarrollador
 
 Dado que la aplicación es puramente frontend estática, solo requieres un servidor web local para servir los archivos correctamente.
 
@@ -52,7 +52,7 @@ Abre `src/secrets.js` y reemplaza el valor con tu clave privada:
 const API_KEY = 'TU_API_KEY_DE_TMDB';
 ```
 
-> ⚠️ **Nota:** El archivo `src/secrets.js` está incluido en `.gitignore` para garantizar que tus credenciales nunca se suban al repositorio.
+> **Nota:** El archivo `src/secrets.js` está incluido en `.gitignore` para garantizar que tus credenciales nunca se suban al repositorio.
 
 ### 3. Iniciar un servidor de desarrollo local
 
@@ -74,7 +74,7 @@ Puedes utilizar cualquiera de las siguientes opciones:
 
 ---
 
-## 🔑 Dónde y Cómo Generar la API Key de TMDB
+## Dónde y Cómo Generar la API Key de TMDB
 
 Para utilizar la aplicación necesitas una cuenta gratuita de desarrollador en TMDB:
 
