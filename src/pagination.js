@@ -1,30 +1,21 @@
-// Paginación para genericSection (categorías y búsqueda)
-// - Móvil: scroll infinito (1 página = 20 resultados por tanda)
-// - Escritorio: botón "Cargar más" (4 páginas = 80 resultados por tanda)
-// - Al volver desde otra vista (p. ej. el detalle de una película) se restaura
-//   la lista ya cargada y la posición del scroll, sin volver a pedirla a la API.
-//
-// Cargar DESPUÉS de main.js y ANTES de navigation.js.
-// Requiere: api, genericSection, createMovies (main.js).
-
+// ---------- Configuración y estado ----------
 const DESKTOP_QUERY = window.matchMedia('(min-width: 1024px)');
-const DESKTOP_PAGES_PER_BATCH = 2; // 2 × 20 = 40 resultados por tanda
-const TMDB_MAX_PAGES = 500;        // límite impuesto por la API
+const DESKTOP_PAGES_PER_BATCH = 2;
+const TMDB_MAX_PAGES = 500;
 
-const MAX_CACHED_LISTS = 6;           // listas que se recuerdan a la vez
-const CACHE_TTL = 10 * 60 * 1000;     // 10 minutos
+const MAX_CACHED_LISTS = 6;
+const CACHE_TTL = 10 * 60 * 1000;
 
-let listState = null;                 // lista activa
-const listCache = new Map();          // clave: location.hash → estado de la lista
+let listState = null;
+const listCache = new Map();
 
-// ---------- Elemento "cargar más" (botón en escritorio / centinela en móvil) ----------
+// ---------- Elemento cargar más ----------
 const loadMoreEl = document.createElement('div');
 loadMoreEl.className = 'loadMore-container';
 loadMoreEl.innerHTML = '<button type="button" class="loadMore-btn">Cargar más</button>';
 const loadMoreBtn = loadMoreEl.querySelector('button');
 
 const loadMoreObserver = new IntersectionObserver(entries => {
-    // En escritorio solo se carga con el botón
     if (entries[0].isIntersecting && !DESKTOP_QUERY.matches) {
         loadNextBatch();
     }
@@ -32,7 +23,6 @@ const loadMoreObserver = new IntersectionObserver(entries => {
 
 loadMoreBtn.addEventListener('click', () => loadNextBatch());
 
-// Re-observar fuerza al observer a evaluar de nuevo si el centinela ya está a la vista
 function rearmLoadMore() {
     loadMoreObserver.unobserve(loadMoreEl);
     if (loadMoreEl.isConnected) {
@@ -51,10 +41,9 @@ function showLoadMore() {
 
 // ---------- Caché de listas ----------
 function cacheList(state) {
-    listCache.delete(state.key); // si ya existía, se reinserta como la más reciente
+    listCache.delete(state.key);
     listCache.set(state.key, state);
 
-    // Descarta la más antigua si se supera el límite
     if (listCache.size > MAX_CACHED_LISTS) {
         listCache.delete(listCache.keys().next().value);
     }
@@ -70,15 +59,11 @@ function getCachedList(key) {
         return null;
     }
 
-    // Marca como la más recientemente usada
     listCache.delete(key);
     listCache.set(key, entry);
     return entry;
 }
 
-// Guarda la posición del scroll de la lista que se abandona.
-// Este listener se registra antes que el de navigation.js, así que corre
-// antes de que el router haga window.scrollTo(0, 0).
 window.addEventListener('hashchange', event => {
     const oldKey = `${getMediaType()}:${new URL(event.oldURL).hash}`;
     const entry = listCache.get(oldKey);
@@ -87,7 +72,7 @@ window.addEventListener('hashchange', event => {
     }
 });
 
-// ---------- Helpers ----------
+// ---------- Helpers de carga ----------
 function appendSkeletons(count) {
     for (let i = 0; i < count; i++) {
         const skeleton = document.createElement('div');
@@ -109,10 +94,10 @@ function fetchListPage(state, page) {
     }).then(res => res.data);
 }
 
-// ---------- API pública ----------
+// ---------- API de listas paginadas ----------
 function cancelPaginatedList() {
     if (listState) {
-        listState.controller.abort(); // la lista sigue en caché, solo se cancela su petición en curso
+        listState.controller.abort();
         listState = null;
     }
     loadMoreObserver.unobserve(loadMoreEl);
@@ -129,9 +114,6 @@ function restoreList(state) {
         showLoadMore();
     }
 
-    // El router hace window.scrollTo(0, 0) justo después de esta función,
-    // así que la posición se restaura en el siguiente frame.
-    // 'instant' evita la animación del scroll-behavior: smooth del CSS.
     const y = state.scrollY;
     requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
 }
@@ -139,7 +121,7 @@ function restoreList(state) {
 function startPaginatedList(endpoint, params = {}) {
     const key = `${getMediaType()}:${location.hash}`;
 
-    cancelPaginatedList(); // evita que una respuesta tardía pinte en la lista equivocada
+    cancelPaginatedList();
 
     const cached = getCachedList(key);
     if (cached) {
@@ -152,16 +134,16 @@ function startPaginatedList(endpoint, params = {}) {
         endpoint,
         params,
         nextPage: 1,
-        totalPages: null,   // se conoce al recibir la primera respuesta
+        totalPages: null,
         loading: false,
         controller: new AbortController(),
-        movies: [],         // películas ya cargadas (solo los campos necesarios)
+        movies: [],
         scrollY: 0,
         createdAt: Date.now()
     };
     cacheList(listState);
 
-    createMovies([], genericSection); // vacía la sección y libera el observer de imágenes
+    createMovies([], genericSection);
     appendSkeletons(DESKTOP_QUERY.matches ? 24 : 12);
 
     return loadNextBatch(true);
@@ -188,8 +170,6 @@ async function loadNextBatch(isFirst = false) {
         let page = state.nextPage;
         let results = [];
 
-        // Primera vez: se pide una página para conocer total_pages
-        // y no pedir páginas que no existen
         if (state.totalPages === null) {
             const first = await fetchListPage(state, page);
             state.totalPages = Math.min(first.total_pages, TMDB_MAX_PAGES);
@@ -197,7 +177,6 @@ async function loadNextBatch(isFirst = false) {
             page++;
         }
 
-        // El resto de páginas de la tanda se piden en paralelo
         const last = Math.min(state.nextPage + batchSize - 1, state.totalPages);
         const requests = [];
         for (let p = page; p <= last; p++) {
@@ -206,14 +185,18 @@ async function loadNextBatch(isFirst = false) {
         const responses = await Promise.all(requests);
         results = results.concat(responses.flatMap(r => r.results));
 
-        // Si mientras tanto se inició otra lista, se descarta esta respuesta
         if (state !== listState) return;
 
         state.nextPage = last + 1;
         removeSkeletons();
 
-        // Se guardan solo los campos que usa createMovies
-        const movies = results.map(({ id, title, poster_path }) => ({ id, title, poster_path }));
+        const currentType = getMediaType();
+        const movies = results.map(item => ({
+            id: item.id,
+            title: item.title ?? item.name ?? '',
+            poster_path: item.poster_path,
+            type: item.type ?? currentType
+        }));
         state.movies.push(...movies);
 
         if (state.movies.length === 0) {
@@ -236,26 +219,24 @@ async function loadNextBatch(isFirst = false) {
             if (state.movies.length === 0) {
                 genericSection.innerHTML = '';
             } else {
-                // Permite reintentar
                 genericSection.appendChild(loadMoreEl);
                 loadMoreBtn.disabled = false;
                 loadMoreBtn.textContent = 'Reintentar';
             }
         }
     } finally {
-        // Solo si la lista no fue reiniciada/restaurada mientras tanto
         if (state.controller === controller) {
             state.loading = false;
         }
     }
 }
 
-// ---------- Funciones que usa el router (reemplazan a las de main.js) ----------
+// ---------- Consultas por categoría y búsqueda ----------
 function getMoviesByCategory(categoryId) {
-    return startPaginatedList('discover/movie', { with_genres: categoryId });
+    return startPaginatedList(`discover/${getMediaType()}`, { with_genres: categoryId });
 }
 
 function getMoviesBySearch(query) {
-    return startPaginatedList('search/movie', { query });
+    return startPaginatedList(`search/${getMediaType()}`, { query });
 }
 

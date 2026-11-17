@@ -1,12 +1,6 @@
-// Hero de tendencias: carrusel con scroll-snap, autoplay y controles
-//
-// Cargar DESPUÉS de nodes.js, favorites.js y main.js.
-// Requiere: heroSection, heroTrack, heroDots, heroPrev, heroNext, heroToggle (nodes.js),
-//           createFavoriteButton (favorites.js) e IMG_BG_URL / IMG_BACKDROP_URL (main.js).
-// Esas funciones y constantes se usan solo en tiempo de ejecución.
-
-const HERO_SLIDES = 6;       // cuántas películas se muestran
-const HERO_INTERVAL = 6000;  // ms entre slides
+// ---------- Configuración y estado ----------
+const HERO_SLIDES = 6;
+const HERO_INTERVAL = 6000;
 const IMG_ORIGINAL_URL = 'https://image.tmdb.org/t/p/original';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -20,7 +14,7 @@ let heroTouching = false;
 let heroVisible = false;
 let heroUserPaused = false;
 
-// ---------- Construcción ----------
+// ---------- Construcción de slides ----------
 function createHeroSlide(movie, index, total) {
     const slide = document.createElement('article');
     slide.classList.add('hero-slide');
@@ -28,7 +22,6 @@ function createHeroSlide(movie, index, total) {
     slide.setAttribute('aria-roledescription', 'slide');
     slide.setAttribute('aria-label', `${index + 1} de ${total}`);
 
-    // Backdrop (horizontal) en escritorio y póster (vertical) en móvil
     const picture = document.createElement('picture');
     if (movie.backdrop_path) {
         const source = document.createElement('source');
@@ -43,21 +36,24 @@ function createHeroSlide(movie, index, total) {
 
     const img = document.createElement('img');
     img.classList.add('hero-img');
-    img.alt = ''; // decorativa: el título ya está en el texto de la slide
+    img.alt = '';
     img.src = `${IMG_BG_URL}${movie.poster_path ?? movie.backdrop_path}`;
     img.loading = index === 0 ? 'eager' : 'lazy';
     if (index === 0) img.fetchPriority = 'high';
     picture.appendChild(img);
+
+    const type = movie.type ?? getMediaType();
+    const titleText = movie.title ?? movie.name ?? '';
 
     const content = document.createElement('div');
     content.classList.add('hero-content');
 
     const title = document.createElement('h3');
     title.classList.add('hero-title');
-    title.textContent = movie.title;
+    title.textContent = titleText;
     content.appendChild(title);
 
-    const year = movie.release_date?.slice(0, 4);
+    const year = (movie.release_date ?? movie.first_air_date)?.slice(0, 4);
     const score = movie.vote_average > 0 ? `★ ${movie.vote_average.toFixed(1)}` : '';
     const metaText = [score, year].filter(Boolean).join(' · ');
     if (metaText) {
@@ -79,11 +75,11 @@ function createHeroSlide(movie, index, total) {
     cta.classList.add('hero-cta');
     cta.textContent = 'Ver detalle';
     cta.addEventListener('click', () => {
-        location.hash = `#movie=${movie.id}`;
+        location.hash = `#${type}=${movie.id}`;
     });
     content.appendChild(cta);
 
-    slide.append(picture, content, createFavoriteButton(movie));
+    slide.append(picture, content, createFavoriteButton({ ...movie, type, title: titleText }));
     return slide;
 }
 
@@ -148,7 +144,7 @@ function setHeroActive(index) {
 function goToHero(index) {
     if (heroCount === 0) return;
 
-    const target = (index + heroCount) % heroCount; // da la vuelta al llegar al final
+    const target = (index + heroCount) % heroCount;
     heroTrack.scrollTo({
         left: target * heroTrack.clientWidth,
         behavior: reduceMotion.matches ? 'auto' : 'smooth'
@@ -160,7 +156,38 @@ function currentHeroIndex() {
     return Math.min(heroCount - 1, Math.max(0, Math.round(heroTrack.scrollLeft / width)));
 }
 
-// El índice activo sale de la posición del scroll, así que también funciona al deslizar con el dedo
+// ---------- Autoplay y controles ----------
+function updateAutoplay() {
+    const shouldRun =
+        heroCount > 1 &&
+        !heroUserPaused &&
+        !heroHovered &&
+        !heroFocused &&
+        !heroTouching &&
+        heroVisible &&
+        !document.hidden &&
+        !reduceMotion.matches;
+
+    if (shouldRun && !heroTimer) {
+        heroTimer = setInterval(() => goToHero(heroIndex + 1), HERO_INTERVAL);
+    } else if (!shouldRun && heroTimer) {
+        clearInterval(heroTimer);
+        heroTimer = null;
+    }
+
+    heroTrack.setAttribute('aria-live', heroTimer ? 'off' : 'polite');
+    heroToggle.textContent = heroUserPaused ? '▶' : '❚❚';
+    heroToggle.setAttribute('aria-label', heroUserPaused ? 'Reanudar carrusel' : 'Pausar carrusel');
+    heroToggle.classList.toggle('inactive', reduceMotion.matches);
+}
+
+function restartAutoplay() {
+    clearInterval(heroTimer);
+    heroTimer = null;
+    updateAutoplay();
+}
+
+// ---------- Observadores y eventos ----------
 let heroScrollTicking = false;
 heroTrack.addEventListener('scroll', () => {
     if (heroScrollTicking || heroCount === 0) return;
@@ -191,46 +218,11 @@ heroSection.addEventListener('keydown', event => {
     }
 });
 
-// ---------- Autoplay ----------
-function updateAutoplay() {
-    const shouldRun =
-        heroCount > 1 &&
-        !heroUserPaused &&
-        !heroHovered &&
-        !heroFocused &&
-        !heroTouching &&
-        heroVisible &&
-        !document.hidden &&
-        !reduceMotion.matches;
-
-    if (shouldRun && !heroTimer) {
-        heroTimer = setInterval(() => goToHero(heroIndex + 1), HERO_INTERVAL);
-    } else if (!shouldRun && heroTimer) {
-        clearInterval(heroTimer);
-        heroTimer = null;
-    }
-
-    // Si no rota sola, los lectores de pantalla pueden anunciar el cambio de slide
-    heroTrack.setAttribute('aria-live', heroTimer ? 'off' : 'polite');
-
-    heroToggle.textContent = heroUserPaused ? '▶' : '❚❚';
-    heroToggle.setAttribute('aria-label', heroUserPaused ? 'Reanudar carrusel' : 'Pausar carrusel');
-    heroToggle.classList.toggle('inactive', reduceMotion.matches);
-}
-
-// Reinicia la cuenta: tras una interacción, la slide actual se queda un intervalo completo
-function restartAutoplay() {
-    clearInterval(heroTimer);
-    heroTimer = null;
-    updateAutoplay();
-}
-
 heroToggle.addEventListener('click', () => {
     heroUserPaused = !heroUserPaused;
     restartAutoplay();
 });
 
-// Pausa con el mouse encima (los eventos táctiles de hover emulados se ignoran)
 heroSection.addEventListener('pointerenter', event => {
     if (event.pointerType !== 'mouse') return;
     heroHovered = true;
@@ -243,8 +235,6 @@ heroSection.addEventListener('pointerleave', event => {
     restartAutoplay();
 });
 
-// Pausa con el foco del teclado; el foco por clic de mouse no cuenta,
-// si no el carrusel quedaría detenido tras pulsar una flecha
 heroSection.addEventListener('focusin', event => {
     heroFocused = event.target.matches(':focus-visible');
     updateAutoplay();
@@ -255,7 +245,6 @@ heroSection.addEventListener('focusout', () => {
     restartAutoplay();
 });
 
-// Pausa mientras el dedo está sobre el carrusel
 heroTrack.addEventListener('touchstart', () => {
     heroTouching = true;
     updateAutoplay();
@@ -271,12 +260,9 @@ heroTrack.addEventListener('touchstart', () => {
 document.addEventListener('visibilitychange', updateAutoplay);
 reduceMotion.addEventListener('change', updateAutoplay);
 
-// Solo rota mientras está a la vista. También cubre cuando el router oculta la sección
-// (display: none), ya que entonces deja de intersectar.
 new IntersectionObserver(([entry]) => {
     heroVisible = entry.isIntersecting;
 
-    // Al volver a mostrarse, el navegador puede haber reiniciado el scroll: se resincroniza
     if (heroVisible && heroCount > 0) {
         setHeroActive(currentHeroIndex());
     }

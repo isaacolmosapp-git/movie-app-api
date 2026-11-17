@@ -1,18 +1,18 @@
-// Sections
+// ---------- Secciones ----------
 const headerSection = document.querySelector('#header');
 const trendingPreviewSection = document.querySelector('#trendingPreview');
 const categoriesPreviewSection = document.querySelector('#categoriesPreview');
 const genericSection = document.querySelector('#genericList');
 const movieDetailSection = document.querySelector('#movieDetail');
 
-// Lists & Containers
+// ---------- Contenedores ----------
 const trendingMoviesPreviewContainer = document.querySelector('.trendingPreview-movieList');
 const categoriesPreviewContainer = document.querySelector('.categoriesPreview-list');
 const movieDetailCategoriesList = document.querySelector('#movieDetail .categories-list');
 const relatedMoviesContainer = document.querySelector('.relatedMovies-scrollContainer');
 const homeRowsContainer = document.querySelector('#homeRows');
 
-// Hero
+// ---------- Hero carrusel ----------
 const heroSection = document.querySelector('.hero');
 const heroTrack = document.querySelector('.hero-track');
 const heroDots = document.querySelector('.hero-dots');
@@ -20,9 +20,11 @@ const heroPrev = document.querySelector('.hero-nav--prev');
 const heroNext = document.querySelector('.hero-nav--next');
 const heroToggle = document.querySelector('.hero-toggle');
 
-// Elements
+// ---------- Elementos de cabecera ----------
 const headerTitle = document.querySelector('.header-title');
 const arrowBtn = document.querySelector('.header-arrow');
+const mediaTypeSwitcher = document.querySelector('#mediaTypeSwitcher');
+const mediaTypeBtns = document.querySelectorAll('.mediaType-btn');
 const navDesktop = document.querySelector('#navDesktop');
 const navMobile = document.querySelector('#navMobile');
 const peopleSection = document.querySelector('#peopleSection');
@@ -30,7 +32,7 @@ const peopleList = document.querySelector('.people-list');
 const headerCategoryTitle = document.querySelector('.header-title--categoryView');
 const trendingBtn = document.querySelector('.trendingPreview-btn');
 
-// Search
+// ---------- Buscador ----------
 const searchForm = document.querySelector('#searchForm');
 const searchFormInput = document.querySelector('#searchForm input');
 const searchFormBtn = document.querySelector('#searchBtn');
@@ -40,7 +42,7 @@ const searchRecentList = document.querySelector('.searchPanel-recentList');
 const searchRecentClear = document.querySelector('.searchPanel-clear');
 const searchCategoriesList = document.querySelector('.searchPanel-categories');
 
-// Movie Detail
+// ---------- Detalle de contenido ----------
 const movieDetailTitle = document.querySelector('.movieDetail-title');
 const movieDetailDescription = document.querySelector('.movieDetail-description');
 const movieDetailScore = document.querySelector('.movieDetail-score');
@@ -48,19 +50,19 @@ const movieDetailMeta = document.querySelector('.movieDetail-meta');
 const movieDetailCastSection = document.querySelector('.cast-container');
 const movieDetailCastList = document.querySelector('.cast-list');
 
-// Favs
+// ---------- Favoritos ----------
 const favoritesPreviewSection = document.querySelector('#favoritesPreview');
 const favoritesContainer = document.querySelector('.favoritesPreview-movieList');
 const movieDetailFavBtn = document.querySelector('.fav-btn--detail');
 const favoritesMoreBtn = document.querySelector('.favoritesPreview-btn');
 
-// Trailer
+// ---------- Tráiler ----------
 const trailerBtn = document.querySelector('.trailer-btn');
 const trailerModal = document.querySelector('#trailerModal');
 const trailerFrame = document.querySelector('.trailer-frame');
 const trailerClose = document.querySelector('.trailer-close');
 
-// Person
+// ---------- Personas ----------
 const personInfoSection = document.querySelector('#personInfo');
 const personPhoto = document.querySelector('.personInfo-photo');
 const personName = document.querySelector('.personInfo-name');
@@ -72,7 +74,7 @@ const personTabs = document.querySelector('.personInfo-tabs');
 const peopleTabs = document.querySelector('.people-tabs');
 const peopleTitle = document.querySelector('.people-title');
 
-// Library
+// ---------- Biblioteca ----------
 const libraryPanelSection = document.querySelector('#libraryPanel');
 const libraryGrid = document.querySelector('.library-grid');
 const libraryNewBtn = document.querySelector('.library-new');

@@ -1,21 +1,7 @@
-// Listas personales (localStorage) y vista Biblioteca
-//
-// Cargar DESPUÉS de nodes.js, media.js y favorites.js, y ANTES de navigation.js.
-// Requiere (nodes.js): libraryGrid, libraryNewBtn, listToolbarCount, listRenameBtn,
-//   listDeleteBtn, listFormDialog, listForm, listFormTitle, listFormInput, listFormError,
-//   listFormCancel, addToListDialog, addToListItems, addToListForm, addToListInput,
-//   addToListError, addToListClose y movieDetailListBtn.
-// Requiere en tiempo de ejecución: createMovies, IMG_BASE_URL (main.js), setHeaderTitle,
-//   showGenericMessage y currentViewName (navigation.js), cancelPaginatedList (pagination.js),
-//   favoriteMovies (favorites.js), getMediaType (media.js).
-//
-// Cada lista es { id, name, createdAt, items: [{ id, type, title, poster_path }] }.
-// El id es generado: el nombre puede repetirse en otro momento o cambiar.
-
+// ---------- Almacenamiento y datos de listas ----------
 const LISTS_KEY = 'user_lists';
 const LIST_NAME_MAX = 40;
 
-// ---------- Datos ----------
 function loadLists() {
     try {
         const stored = JSON.parse(localStorage.getItem(LISTS_KEY));
@@ -30,7 +16,6 @@ function loadLists() {
                     : []
             }));
     } catch {
-        // JSON corrupto o localStorage no disponible
         return [];
     }
 }
@@ -53,14 +38,13 @@ function notifyListsChanged() {
 function newListId() {
     const id = globalThis.crypto?.randomUUID?.()
         ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-    return id.replace(/[^a-z0-9-]/gi, ''); // el id va en el hash: solo caracteres seguros
+    return id.replace(/[^a-z0-9-]/gi, '');
 }
 
 function getList(id) {
     return userLists.find(list => list.id === id);
 }
 
-// Limpia espacios, recorta y comprueba que no esté vacío ni repetido (sin distinguir mayúsculas)
 function validateListName(rawName, exceptId = null) {
     const name = rawName.trim().replace(/\s+/g, ' ').slice(0, LIST_NAME_MAX);
 
@@ -83,7 +67,7 @@ function createList(rawName) {
     if (error) return { error };
 
     const list = { id: newListId(), name, createdAt: Date.now(), items: [] };
-    userLists = [list, ...userLists]; // la más reciente primero
+    userLists = [list, ...userLists];
     notifyListsChanged();
 
     return { list };
@@ -121,7 +105,6 @@ function toggleListItem(listId, movie) {
     if (listHasItem(list, id, type)) {
         list.items = list.items.filter(item => !(item.id === id && item.type === type));
     } else {
-        // Solo lo necesario para dibujar la tarjeta; la más reciente primero
         list.items = [{ id, type, title: movie.title, poster_path: movie.poster_path }, ...list.items];
     }
 
@@ -136,7 +119,7 @@ function removeListItem(listId, movieId, type) {
     notifyListsChanged();
 }
 
-// ---------- Utilidades de interfaz ----------
+// ---------- Diálogos y utilidades ----------
 function showFormError(element, text) {
     element.textContent = text;
     element.classList.remove('inactive');
@@ -147,7 +130,6 @@ function hideFormError(element) {
     element.classList.add('inactive');
 }
 
-// Clic en el fondo oscuro: el destino es el propio <dialog>, no su contenido
 function enableBackdropClose(dialog) {
     dialog.addEventListener('click', event => {
         if (event.target === dialog) dialog.close();
@@ -161,7 +143,7 @@ function countLabel(count) {
     return `${count} ${count === 1 ? 'película' : 'películas'}`;
 }
 
-// ---------- Biblioteca ----------
+// ---------- Vista de biblioteca ----------
 function createListCard({ href, name, count, posters, icon }) {
     const card = document.createElement('a');
     card.classList.add('listCard');
@@ -187,7 +169,7 @@ function createListCard({ href, name, count, posters, icon }) {
 
     const title = document.createElement('h3');
     title.classList.add('listCard-name');
-    title.textContent = name; // textContent: el nombre lo escribió el usuario
+    title.textContent = name;
 
     const total = document.createElement('p');
     total.classList.add('listCard-count');
@@ -220,8 +202,8 @@ function renderLibrary() {
 
 libraryNewBtn.addEventListener('click', () => openListForm({ type: 'create' }));
 
-// ---------- Diálogo de nombre (crear / renombrar) ----------
-let listFormMode = null; // { type: 'create' } | { type: 'rename', id }
+// ---------- Diálogo de creación y edición ----------
+let listFormMode = null;
 
 function openListForm(mode) {
     listFormMode = mode;
@@ -255,7 +237,7 @@ listForm.addEventListener('submit', event => {
 
 listFormCancel.addEventListener('click', () => listFormDialog.close());
 
-// ---------- Vista de una lista ----------
+// ---------- Vista de lista individual ----------
 let activeListId = null;
 
 function addRemoveFromListButton(card, movie) {
@@ -266,7 +248,7 @@ function addRemoveFromListButton(card, movie) {
     btn.setAttribute('aria-label', `Quitar "${movie.title}" de la lista`);
 
     btn.addEventListener('click', event => {
-        event.stopPropagation(); // que no abra el detalle
+        event.stopPropagation();
         removeListItem(activeListId, movie.id, movie.type ?? 'movie');
     });
 
@@ -277,7 +259,7 @@ function renderListView() {
     const list = getList(activeListId);
 
     if (!list) {
-        location.hash = '#library'; // la lista se borró (por ejemplo, desde otra pestaña)
+        location.hash = '#library';
         return;
     }
 
@@ -289,7 +271,7 @@ function renderListView() {
         return;
     }
 
-    cancelPaginatedList(); // genericSection lo comparte la lista paginada
+    cancelPaginatedList();
     createMovies(list.items, genericSection, true, addRemoveFromListButton);
 }
 
@@ -317,12 +299,12 @@ listDeleteBtn.addEventListener('click', () => {
     if (!confirmed) return;
 
     const id = activeListId;
-    activeListId = null; // evita que el aviso de cambios intente redibujarla
+    activeListId = null;
     deleteList(id);
     location.hash = '#library';
 });
 
-// ---------- Añadir una película a listas (desde el detalle) ----------
+// ---------- Diálogo añadir a lista ----------
 let addToListMovie = null;
 
 function updateListRow(row, list) {
@@ -341,11 +323,10 @@ function createAddToListRow(list) {
         '<span class="addToList-check" aria-hidden="true">✓</span>' +
         '<span class="addToList-name"></span>' +
         '<span class="addToList-count"></span>';
-    row.querySelector('.addToList-name').textContent = list.name; // textContent: texto del usuario
+    row.querySelector('.addToList-name').textContent = list.name;
 
     updateListRow(row, list);
 
-    // Se actualiza solo esta fila (sin redibujar todo) para no perder el foco del teclado
     row.addEventListener('click', () => {
         toggleListItem(list.id, addToListMovie);
         updateListRow(row, list);
@@ -376,7 +357,6 @@ function openAddToList(movie) {
     if (!addToListDialog.open) addToListDialog.showModal();
 }
 
-// Crear una lista nueva y añadir la película en el mismo paso
 addToListForm.addEventListener('submit', event => {
     event.preventDefault();
     if (!addToListMovie) return;
@@ -396,7 +376,7 @@ addToListForm.addEventListener('submit', event => {
 
 addToListClose.addEventListener('click', () => addToListDialog.close());
 
-// ---------- Botón del detalle ----------
+// ---------- Botón de detalle ----------
 let detailListMovie = null;
 
 function updateDetailListButton() {
@@ -420,11 +400,11 @@ function bindDetailListButton(movie) {
     };
 
     movieDetailListBtn.classList.remove('inactive');
-    movieDetailListBtn.onclick = () => openAddToList(detailListMovie); // onclick evita acumular listeners
+    movieDetailListBtn.onclick = () => openAddToList(detailListMovie);
     updateDetailListButton();
 }
 
-// ---------- Sincronización ----------
+// ---------- Sincronización y eventos ----------
 window.addEventListener('lists:changed', () => {
     renderLibrary();
     updateDetailListButton();
@@ -434,10 +414,8 @@ window.addEventListener('lists:changed', () => {
     }
 });
 
-// Los favoritos también aparecen en la Biblioteca
 window.addEventListener('favorites:changed', renderLibrary);
 
-// Cambios hechos en otra pestaña
 window.addEventListener('storage', event => {
     if (event.key !== LISTS_KEY) return;
 

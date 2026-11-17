@@ -1,14 +1,4 @@
-// Ficha de persona: cabecera con biografía y filmografía por rol (actuación / dirección)
-//
-// Cargar DESPUÉS de pagination.js y antes de navigation.js.
-// Requiere (nodes.js): personPhoto, personName, personMeta, personBio, personBioMore,
-//                      personBioNote, personTabs.
-// Requiere en tiempo de ejecución: api, createMovies (main.js), appendSkeletons y
-// cancelPaginatedList (pagination.js), showGenericMessage (navigation.js).
-//
-// Una sola petición, person/{id}?append_to_response=movie_credits, da los datos de la
-// persona y todos sus créditos. La dirección sale del equipo (crew) con job "Director".
-
+// ---------- Configuración y estado ----------
 const IMG_PERSON_URL = 'https://image.tmdb.org/t/p/h632';
 
 const PERSON_ROLES = {
@@ -16,16 +6,15 @@ const PERSON_ROLES = {
     director: { label: 'Dirección' }
 };
 
-// Apariciones como uno mismo (documentales, material de archivo): no son papeles
 const SELF_CREDIT = /\b(self|himself|herself|themselves|archive footage)\b/i;
 
-const personCache = new Map();     // id → { person, bioIsFallback, roles }
-const personViewState = new Map(); // id → { role, scrollY }
-const personRoleHints = new Map(); // id → 'actor' | 'director' (lo rellena la vista Personas)
-let personRequest = 0;             // descarta respuestas de una persona anterior
+const personCache = new Map();
+const personViewState = new Map();
+const personRoleHints = new Map();
+let personRequest = 0;
 let currentPerson = null;
 
-// ---------- Datos ----------
+// ---------- Datos y créditos ----------
 function uniqueById(list) {
     return [...new Map(list.map(item => [item.id, item])).values()];
 }
@@ -56,7 +45,6 @@ async function fetchPerson(id) {
     let bioIsFallback = false;
     const appLanguage = api.defaults.params?.language ?? 'es';
 
-    // Muchas biografías no están traducidas: si viene vacía, se intenta en inglés
     if (!person.biography && !appLanguage.startsWith('en')) {
         const { data } = await api.get(`person/${id}`, { params: { language: 'es-MX' } });
         if (data.biography) {
@@ -68,7 +56,7 @@ async function fetchPerson(id) {
     return { person, bioIsFallback, roles: buildRoles(person.movie_credits) };
 }
 
-// ---------- Cabecera ----------
+// ---------- Cabecera y biografía ----------
 function formatDate(date) {
     return date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
 }
@@ -109,7 +97,7 @@ function setPersonPhoto(path, name) {
         personPhoto.textContent = '';
     } else {
         personPhoto.style.backgroundImage = '';
-        personPhoto.textContent = name.charAt(0); // sin foto: la inicial
+        personPhoto.textContent = name.charAt(0);
     }
 }
 
@@ -147,7 +135,6 @@ function renderPersonHeader({ person, bioIsFallback }) {
     personBioNote.textContent = 'Biografía en inglés: no hay traducción disponible.';
     personBioNote.classList.toggle('inactive', !(bio && bioIsFallback));
 
-    // "Leer más" solo si el texto no cabe en las líneas visibles
     personBioMore.textContent = 'Leer más';
     personBioMore.classList.add('inactive');
     requestAnimationFrame(() => {
@@ -163,7 +150,6 @@ personBioMore.addEventListener('click', () => {
 
 // ---------- Roles y filmografía ----------
 function pickDefaultRole(data) {
-    // Si se llegó desde la lista de directores (o de actores), se respeta ese rol
     const hint = personRoleHints.get(String(data.person.id));
     if (hint && data.roles[hint].length > 0) {
         return hint;
@@ -181,7 +167,6 @@ function renderPersonTabs(data, activeRole) {
 
     const available = Object.keys(PERSON_ROLES).filter(role => data.roles[role].length > 0);
 
-    // Con un solo rol no hace falta elegir
     personTabs.classList.toggle('inactive', available.length < 2);
     if (available.length < 2) return;
 
@@ -198,7 +183,7 @@ function renderPersonTabs(data, activeRole) {
 }
 
 function renderFilmography(movies) {
-    cancelPaginatedList(); // genericSection lo comparte la lista paginada
+    cancelPaginatedList();
 
     if (movies.length === 0) {
         showGenericMessage('No hay películas para mostrar.');
@@ -227,7 +212,6 @@ function renderPerson(data) {
     const key = String(data.person.id);
     let state = personViewState.get(key);
 
-    // Rol recordado de una visita anterior, si sigue teniendo películas
     if (!state || data.roles[state.role].length === 0) {
         state = { role: pickDefaultRole(data), scrollY: 0 };
         personViewState.set(key, state);
@@ -237,15 +221,13 @@ function renderPerson(data) {
     renderPersonTabs(data, state.role);
     renderFilmography(data.roles[state.role]);
 
-    // Al volver desde el detalle de una película, se recupera la posición del scroll.
-    // El router hace scrollTo(0, 0) justo después de entrar, por eso se restaura en el siguiente frame.
     if (state.scrollY > 0) {
         const y = state.scrollY;
         requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
     }
 }
 
-// Guarda la posición del scroll de la ficha que se abandona
+// ---------- Navegación y estado ----------
 function personIdFromHash(hash) {
     const match = hash.match(/^#(?:person|actor)=(\d+)/);
     return match ? match[1] : null;
@@ -273,14 +255,14 @@ async function showPerson(id, nameFromHash) {
     currentPerson = null;
     renderPersonLoading(nameFromHash);
     cancelPaginatedList();
-    createMovies([], genericSection); // vacía la sección y libera el observer de imágenes
+    createMovies([], genericSection);
     appendSkeletons(12);
 
     try {
         const data = await fetchPerson(id);
         personCache.set(key, data);
 
-        if (request !== personRequest) return; // el usuario ya abrió otra persona
+        if (request !== personRequest) return;
 
         renderPerson(data);
     } catch (error) {

@@ -1,14 +1,8 @@
-// Vista "Personas": actores populares y directores destacados
-//
-// Cargar en cualquier punto después de nodes.js: todo se usa en tiempo de ejecución.
-// Requiere: peopleList, peopleTabs y peopleTitle (nodes.js); api, createCast y
-//           createCastSkeletons (main.js); personRoleHints (person.js).
+// ---------- Configuración de personas ----------
+function getPeopleMediaType() {
+    return getMediaType();
+}
 
-// Tipo de contenido que muestra la app ('movie' o 'tv'). Hoy solo hay películas; cuando
-// exista el modo series, este valor vendrá del ajuste guardado.
-const PEOPLE_MEDIA_TYPE = 'movie';
-
-// person/popular devuelve 20 por página y no todos son actores con películas conocidas
 const PEOPLE_PAGES = 3;
 
 const PEOPLE_KINDS = {
@@ -18,20 +12,20 @@ const PEOPLE_KINDS = {
 
 const PEOPLE_KIND_KEY = 'people_kind';
 const DIRECTORS_CACHE_KEY = 'popular_directors';
-const DIRECTORS_CACHE_TTL = 24 * 60 * 60 * 1000; // un día
+const DIRECTORS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 function loadPeopleKind() {
     try {
         const stored = localStorage.getItem(PEOPLE_KIND_KEY);
         return Object.hasOwn(PEOPLE_KINDS, stored) ? stored : 'actors';
     } catch {
-        return 'actors'; // localStorage no disponible
+        return 'actors';
     }
 }
 
 let peopleKind = loadPeopleKind();
-const peopleMemory = new Map(); // tipo de lista → personas; al volver se muestra al instante
-let peopleRequest = 0;          // descarta respuestas de una pestaña que ya no está activa
+const peopleMemory = new Map();
+let peopleRequest = 0;
 
 // ---------- Actores ----------
 async function fetchActors() {
@@ -41,34 +35,28 @@ async function fetchActors() {
         )
     );
 
+    const currentMediaType = getPeopleMediaType();
     const people = responses
         .flatMap(response => response.data.results)
         .filter(person =>
             person.known_for_department === 'Acting' &&
             person.profile_path &&
-            // known_for mezcla películas y series: solo entra quien tiene alguna obra del tipo actual
-            person.known_for?.some(work => work.media_type === PEOPLE_MEDIA_TYPE)
+            person.known_for?.some(work => work.media_type === currentMediaType)
         )
         .map(person => {
-            const work = person.known_for.find(item => item.media_type === PEOPLE_MEDIA_TYPE);
+            const work = person.known_for.find(item => item.media_type === currentMediaType);
             return {
                 id: person.id,
                 name: person.name,
                 profile_path: person.profile_path,
-                // createCast muestra "character" bajo el nombre: aquí, su obra más conocida
-                // de este tipo (las películas usan "title", las series "name")
                 character: work.title ?? work.name ?? ''
             };
         });
 
-    // Una persona puede repetirse entre páginas
     return [...new Map(people.map(person => [person.id, person])).values()];
 }
 
 // ---------- Directores ----------
-// TMDB no tiene una lista de directores populares. Se obtienen del equipo de las películas
-// mejor valoradas y más populares: una petición de créditos por película (unas 40 en total,
-// solo la primera vez; el resultado se guarda un día en localStorage).
 function readDirectorsCache() {
     try {
         const stored = JSON.parse(localStorage.getItem(DIRECTORS_CACHE_KEY));
@@ -77,7 +65,7 @@ function readDirectorsCache() {
             return stored.list;
         }
     } catch {
-        // JSON corrupto o localStorage no disponible: se vuelve a calcular
+        return null;
     }
     return null;
 }
@@ -99,12 +87,10 @@ async function fetchDirectors() {
         api.get('movie/popular')
     ]);
 
-    // Películas de referencia, sin repetir
     const movies = [...new Map(
         [...topRated.data.results, ...popular.data.results].map(movie => [movie.id, movie])
     ).values()];
 
-    // allSettled: si falla alguna petición, el resto de directores se conserva
     const credits = await Promise.allSettled(
         movies.map(movie => api.get(`movie/${movie.id}/credits`))
     );
@@ -130,7 +116,6 @@ async function fetchDirectors() {
                 };
 
                 entry.count += 1;
-                // Su película más votada entre las analizadas es la que se muestra bajo el nombre
                 if ((movie.vote_count ?? 0) > (entry.topMovie.vote_count ?? 0)) {
                     entry.topMovie = movie;
                 }
@@ -156,7 +141,7 @@ async function fetchDirectors() {
     return list;
 }
 
-// ---------- Vista ----------
+// ---------- Renderizado y pestañas ----------
 function updatePeopleHeader() {
     peopleTitle.textContent = PEOPLE_KINDS[peopleKind].title;
 
@@ -165,7 +150,6 @@ function updatePeopleHeader() {
     });
 }
 
-// La ficha de la persona abre en el rol de la lista desde la que se llegó
 function applyRoleHints(list, kind) {
     list.forEach(person => {
         personRoleHints.set(String(person.id), PEOPLE_KINDS[kind].role);
@@ -191,7 +175,7 @@ async function renderPeople() {
         const list = kind === 'directors' ? await fetchDirectors() : await fetchActors();
         peopleMemory.set(kind, list);
 
-        if (request !== peopleRequest) return; // el usuario ya cambió de pestaña
+        if (request !== peopleRequest) return;
 
         applyRoleHints(list, kind);
         createCast(list, peopleList);
@@ -204,7 +188,6 @@ async function renderPeople() {
 }
 
 function setPeopleKind(kind) {
-    // Pulsar la pestaña activa solo hace algo si su lista aún no se cargó (reintento)
     if (kind === peopleKind && peopleMemory.has(kind)) return;
 
     peopleKind = kind;
@@ -218,11 +201,11 @@ function setPeopleKind(kind) {
     renderPeople();
 }
 
+// ---------- Eventos y navegación ----------
 peopleTabs.querySelectorAll('.people-tab').forEach(tab => {
     tab.addEventListener('click', () => setPeopleKind(tab.dataset.kind));
 });
 
-// Punto de entrada desde el router
 function getPopularPeople() {
     return renderPeople();
 }

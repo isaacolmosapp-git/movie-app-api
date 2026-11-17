@@ -1,4 +1,4 @@
-// Instancia con configuración común: baseURL y parámetros que van en todas las peticiones
+// ---------- Cliente API ----------
 const api = axios.create({
     baseURL: 'https://api.themoviedb.org/3/',
     headers: {
@@ -10,19 +10,23 @@ const api = axios.create({
     }
 });
 
+// ---------- Rutas de imágenes ----------
 const IMG_BASE_URL = 'https://image.tmdb.org/t/p/w300';
 const IMG_BG_URL = 'https://image.tmdb.org/t/p/w780';
 const IMG_BACKDROP_URL = 'https://image.tmdb.org/t/p/w1280';
 const IMG_PROFILE_URL = 'https://image.tmdb.org/t/p/w185';
 
+// ---------- Peticiones de datos ----------
 async function getTrendingMoviesPreview() {
     showHeroSkeleton();
     try {
-        const { data } = await api.get('trending/movie/day');
-        renderHero(data.results);
+        const type = getMediaType();
+        const { data } = await api.get(`trending/${type}/day`);
+        const items = data.results.map(item => ({ ...item, type }));
+        renderHero(items);
     } catch (error) {
         heroSection.classList.add('inactive');
-        console.error('Error al cargar las películas en tendencia:', error.response?.status ?? error.message);
+        console.error('Error al cargar las tendencias:', error.response?.status ?? error.message);
     }
 }
 
@@ -30,28 +34,27 @@ async function getTrendingMovies() {
     createMovieSkeletons(genericSection);
 
     try {
-        // axios ya parsea el JSON: los datos están en res.data
-        const { data } = await api.get('trending/movie/day');
-        createMovies(data.results, genericSection);
+        const type = getMediaType();
+        const { data } = await api.get(`trending/${type}/day`);
+        const items = data.results.map(item => ({ ...item, type }));
+        createMovies(items, genericSection);
     } catch (error) {
-        console.error('Error al cargar las películas en tendencia:', error.response?.status ?? error.message);
+        console.error('Error al cargar las tendencias:', error.response?.status ?? error.message);
     }
 }
 
 async function getCategoriesPreview() {
-    
     try {
         createCategorySkeletons(categoriesPreviewContainer, 12);
-        const { data } = await api.get('genre/movie/list');
+        const type = getMediaType();
+        const { data } = await api.get(`genre/${type}/list`);
         createCategories(data.genres, categoriesPreviewContainer);
     } catch (error) {
         console.error('Error al cargar las categorías:', error.response?.status ?? error.message);
     }
 }
 
-
-async function getMovieById(movieId) {
-    // Estado de carga
+async function getMovieById(movieId, type = getMediaType()) {
     trailerBtn.classList.add('inactive');
     movieDetailListBtn.classList.add('inactive');
     movieDetailSection.classList.add('is-loading');
@@ -66,24 +69,41 @@ async function getMovieById(movieId) {
     movieDetailSection.style.removeProperty('--movie-bg-wide');
 
     try {
-        // append_to_response trae el reparto en la misma petición
-        const { data: movie } = await api.get(`movie/${movieId}`, {
+        const { data: movie } = await api.get(`${type}/${movieId}`, {
             params: {
-                append_to_response: 'credits,videos',      // ← agrega videos
-                include_video_language: 'es,en,null'       // ← nuevo
+                append_to_response: 'credits,videos',
+                include_video_language: 'es,en,null'
             }
         });
 
-        movieDetailTitle.textContent = movie.title;
-        movieDetailDescription.textContent = movie.overview;
-        movieDetailScore.textContent = movie.vote_average;
-        bindDetailFavoriteButton(movie);
-        bindTrailerButton(movie.videos?.results);
-        bindDetailListButton(movie); 
-        trackRecentlyViewed(movie);
+        const title = movie.title ?? movie.name ?? '';
+        const normalizedMovie = { ...movie, id: movie.id, type, title };
 
-        const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
-        movieDetailMeta.textContent = [year, formatRuntime(movie.runtime)]
+        movieDetailTitle.textContent = title;
+        movieDetailDescription.textContent = movie.overview;
+        movieDetailScore.textContent = movie.vote_average ? movie.vote_average.toFixed(1) : '';
+        bindDetailFavoriteButton(normalizedMovie);
+        bindTrailerButton(movie.videos?.results);
+        bindDetailListButton(normalizedMovie);
+        trackRecentlyViewed(normalizedMovie);
+
+        const date = movie.release_date ?? movie.first_air_date;
+        const year = date ? date.slice(0, 4) : '';
+
+        let durationText = '';
+        if (type === 'tv' || movie.number_of_seasons) {
+            const seasons = movie.number_of_seasons;
+            const episodes = movie.number_of_episodes;
+            if (seasons) {
+                durationText = `${seasons} ${seasons === 1 ? 'temporada' : 'temporadas'}`;
+            } else if (episodes) {
+                durationText = `${episodes} eps`;
+            }
+        } else {
+            durationText = formatRuntime(movie.runtime);
+        }
+
+        movieDetailMeta.textContent = [year, durationText]
             .filter(Boolean)
             .join(' · ');
 
@@ -99,7 +119,6 @@ async function getMovieById(movieId) {
 
         createCategories(movie.genres, movieDetailCategoriesList);
 
-        // Los primeros 12 del reparto, ya ordenados por importancia en la película
         const cast = (movie.credits?.cast ?? []).slice(0, 12);
         if (cast.length) {
             createCast(cast, movieDetailCastList);
@@ -110,32 +129,26 @@ async function getMovieById(movieId) {
     } catch (error) {
         movieDetailCategoriesList.innerHTML = '';
         movieDetailCastList.innerHTML = '';
-        console.error('Error al cargar los detalles de la película:', error.response?.status ?? error.message);
+        console.error('Error al cargar los detalles:', error.response?.status ?? error.message);
     } finally {
         movieDetailSection.classList.remove('is-loading');
     }
-    
-
 }
 
-async function getRelatedMoviesById(movieId) {
+async function getRelatedMoviesById(movieId, type = getMediaType()) {
     createMovieSkeletons(relatedMoviesContainer);
 
     try {
-        const { data } = await api.get(`movie/${movieId}/similar`);
-        createMovies(data.results, relatedMoviesContainer);
-
-        // Al pasar de una película a otra, la lista vuelve al inicio
+        const { data } = await api.get(`${type}/${movieId}/similar`);
+        const items = data.results.map(item => ({ ...item, type }));
+        createMovies(items, relatedMoviesContainer);
         relatedMoviesContainer.scrollLeft = 0;
     } catch (error) {
-        console.error('Error al cargar las películas similares:', error.response?.status ?? error.message);
+        console.error('Error al cargar contenido similar:', error.response?.status ?? error.message);
     }
 }
 
-
-        ////// HELPERS ////////
-
-// Un observer por contenedor, para reutilizarlo entre renders
+// ---------- Renderizado y helpers ----------
 const lazyObservers = new WeakMap();
 
 function getLazyObserver(container) {
@@ -143,7 +156,6 @@ function getLazyObserver(container) {
         return lazyObservers.get(container);
     }
 
-    // En listas con scroll horizontal, el "viewport" es el propio contenedor
     const isHorizontal = getComputedStyle(container).overflowX === 'auto';
 
     const observer = new IntersectionObserver((entries, obs) => {
@@ -152,11 +164,10 @@ function getLazyObserver(container) {
 
             const img = entry.target;
             img.src = img.dataset.src;
-            obs.unobserve(img); // ya no hace falta vigilarla
+            obs.unobserve(img);
         });
     }, {
         root: isHorizontal ? container : null,
-        // margen de precarga: ~1 tarjeta antes de que entre en pantalla
         rootMargin: isHorizontal ? '0px 150px' : '200px 0px'
     });
 
@@ -173,15 +184,19 @@ function createMovies(movies, container, clean = true, decorate = null) {
     }
 
     movies.forEach(movie => {
+        const type = movie.type ?? getMediaType();
+        const title = movie.title ?? movie.name ?? '';
+        const item = { ...movie, type, title };
+
         const movieContainer = document.createElement('div');
         movieContainer.classList.add('movie-container', 'skeleton');
         movieContainer.addEventListener('click', () => {
-            location.hash = `#${movie.type ?? 'movie'}=${movie.id}`;
+            location.hash = `#${type}=${movie.id}`;
         });
 
         const movieImg = document.createElement('img');
         movieImg.classList.add('movie-img');
-        movieImg.setAttribute('alt', movie.title);
+        movieImg.setAttribute('alt', title);
         movieImg.setAttribute('decoding', 'async');
 
         movieImg.addEventListener('load', () => {
@@ -194,13 +209,13 @@ function createMovies(movies, container, clean = true, decorate = null) {
             movieImg.remove();
 
             const label = document.createElement('span');
-            label.textContent = movie.title;
+            label.textContent = title;
             movieContainer.appendChild(label);
         });
 
         movieContainer.appendChild(movieImg);
-        movieContainer.appendChild(createFavoriteButton(movie));
-        if (decorate) decorate(movieContainer, movie);
+        movieContainer.appendChild(createFavoriteButton(item));
+        if (decorate) decorate(movieContainer, item);
         container.appendChild(movieContainer);
 
         if (movie.poster_path) {
@@ -216,11 +231,11 @@ function createCategories(categories, container, clean = true) {
     if (clean) {
         container.innerHTML = '';
     }
- 
+
     categories.forEach(category => {
         const categoryContainer = document.createElement('div');
         categoryContainer.classList.add('category-container');
- 
+
         const categoryTitle = document.createElement('h3');
         categoryTitle.classList.add('category-title');
         categoryTitle.addEventListener('click', () => {
@@ -228,7 +243,7 @@ function createCategories(categories, container, clean = true) {
         });
         categoryTitle.setAttribute('id', `id${category.id}`);
         categoryTitle.textContent = category.name;
- 
+
         categoryContainer.appendChild(categoryTitle);
         container.appendChild(categoryContainer);
     });
@@ -270,7 +285,6 @@ function createCast(cast, container, clean = true) {
             photo.setAttribute('loading', 'lazy');
             photo.classList.add('cast-photo');
         } else {
-            // Sin foto: círculo con la inicial del actor
             photo = document.createElement('div');
             photo.classList.add('cast-photo', 'cast-photo--empty');
             photo.textContent = actor.name.charAt(0);
@@ -305,12 +319,11 @@ function createCategorySkeletons(container, count = 8) {
     for (let i = 0; i < count; i++) {
         const skeleton = document.createElement('div');
         skeleton.classList.add('category-title--skeleton', 'skeleton');
-        // Anchos variados para que se vea más natural
         skeleton.style.width = `${70 + ((i * 37) % 60)}px`;
         container.appendChild(skeleton);
     }
 }
 
-
+// ---------- Carga inicial ----------
 getTrendingMoviesPreview();
 getCategoriesPreview();

@@ -1,9 +1,4 @@
-// Pestaña "Buscar" sin texto: búsquedas recientes y categorías como atajos
-//
-// Cargar en cualquier punto después de nodes.js y antes de navigation.js.
-// Requiere: searchRecentBlock, searchRecentList, searchRecentClear y searchCategoriesList
-//           (nodes.js); api y createCategories (main.js) en tiempo de ejecución.
-
+// ---------- Historial de búsqueda ----------
 const SEARCH_HISTORY_KEY = 'recent_searches';
 const SEARCH_HISTORY_LIMIT = 8;
 
@@ -12,7 +7,6 @@ function loadSearchHistory() {
         const stored = JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY));
         return Array.isArray(stored) ? stored.filter(item => typeof item === 'string') : [];
     } catch {
-        // JSON corrupto o localStorage no disponible
         return [];
     }
 }
@@ -27,7 +21,6 @@ function persistSearchHistory() {
     }
 }
 
-// Se llama al buscar: la deja la primera y sin duplicados (sin distinguir mayúsculas)
 function saveRecentSearch(query) {
     const clean = query.trim();
     if (!clean) return;
@@ -65,10 +58,9 @@ function createRecentSearchItem(query) {
     open.innerHTML =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
         '<span></span>';
-    // textContent y no innerHTML: el texto lo escribió el usuario
     open.querySelector('span').textContent = query;
     open.addEventListener('click', () => {
-        saveRecentSearch(query); // sube a la primera posición
+        saveRecentSearch(query);
         location.hash = `#search=${encodeURIComponent(query)}`;
     });
 
@@ -88,24 +80,25 @@ function renderRecentSearches() {
     searchRecentList.replaceChildren(...searchHistory.map(createRecentSearchItem));
 }
 
-// ---------- Categorías ----------
-let searchGenresCache = null;
+// ---------- Categorías de búsqueda ----------
+const searchGenresCache = new Map();
 
 async function renderSearchCategories() {
-    if (!searchGenresCache) {
+    const type = getMediaType();
+    if (!searchGenresCache.has(type)) {
         try {
-            const { data } = await api.get('genre/movie/list');
-            searchGenresCache = data.genres;
+            const { data } = await api.get(`genre/${type}/list`);
+            searchGenresCache.set(type, data.genres);
         } catch (error) {
             console.error('Error al cargar las categorías de búsqueda:', error.response?.status ?? error.message);
             return;
         }
     }
 
-    createCategories(searchGenresCache, searchCategoriesList);
+    createCategories(searchGenresCache.get(type), searchCategoriesList);
 }
 
-// ---------- Panel ----------
+// ---------- Panel de búsqueda ----------
 function renderSearchPanel() {
     renderRecentSearches();
     renderSearchCategories();

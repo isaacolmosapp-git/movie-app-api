@@ -1,79 +1,76 @@
-// Filas reutilizables del home. Hay dos tipos:
-//   - de API:      { endpoint, params? }  → se piden cuando la fila se acerca a la pantalla;
-//                  tienen "Ver todas" (#list=<id>) con la paginación existente.
-//   - propias:     { load }               → load() devuelve un arreglo de películas o
-//                  { title, movies }; pueden ser locales (sin red, se pintan al instante)
-//                  y pueden refrescarse cuando cambian los datos (refreshOn).
-//
-// Cargar DESPUÉS de nodes.js, favorites.js y recent.js. Todo lo de main.js se usa en
-// DOMContentLoaded o después.
-// Requiere: homeRowsContainer (nodes.js), api y createMovies (main.js),
-//           favoriteMovies e isFavorite (favorites.js), getRecentlyViewed y
-//           clearRecentlyViewed (recent.js).
-
-// Fecha (YYYY-MM-DD) a N días de hoy; negativo = pasado
+// ---------- Recomendaciones personalizadas ----------
 const dateOffset = days => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
 
-// ---------- "Porque te gustó X" ----------
-let becauseSource = null; // favorita elegida como origen de las recomendaciones
-let becauseCache = null;  // { sourceId, movies }: evita repetir la petición en cada cambio
+let becauseSource = null;
+let becauseCache = null;
 
 async function loadBecauseYouLiked() {
-    // Se conserva el origen mientras siga en favoritos; si se quita (o aún no hay), se elige otro
-    if (!becauseSource || !isFavorite(becauseSource.id)) {
-        becauseSource = favoriteMovies.length
-            ? favoriteMovies[Math.floor(Math.random() * favoriteMovies.length)]
+    const currentType = getMediaType();
+    const typeFavorites = favoriteMovies.filter(m => (m.type ?? 'movie') === currentType);
+
+    if (!becauseSource || !isFavorite(becauseSource.id, currentType) || (becauseSource.type ?? 'movie') !== currentType) {
+        becauseSource = typeFavorites.length
+            ? typeFavorites[Math.floor(Math.random() * typeFavorites.length)]
             : null;
         becauseCache = null;
     }
 
-    if (!becauseSource) return []; // sin favoritos no hay fila
+    if (!becauseSource) return [];
 
     if (becauseCache?.sourceId !== becauseSource.id) {
-        const { data } = await api.get(`movie/${becauseSource.id}/recommendations`);
-        becauseCache = { sourceId: becauseSource.id, movies: data.results };
+        const { data } = await api.get(`${currentType}/${becauseSource.id}/recommendations`);
+        const items = data.results.map(item => ({ ...item, type: currentType }));
+        becauseCache = { sourceId: becauseSource.id, movies: items };
     }
 
     return {
-        title: `Porque te gustó ${becauseSource.title}`,
+        title: `Porque te gustó ${becauseSource.title ?? becauseSource.name}`,
         movies: becauseCache.movies
     };
 }
 
-// ---------- Definición de filas ----------
+function resolveRowTitle(row) {
+    return typeof row.title === 'function' ? row.title() : row.title;
+}
+
+function resolveRowEndpoint(row) {
+    return typeof row.endpoint === 'function' ? row.endpoint() : row.endpoint;
+}
+
+function resolveRowParams(row) {
+    return typeof row.params === 'function' ? row.params() : row.params;
+}
+
+// ---------- Configuración de filas del home ----------
 const HOME_ROWS = [
     {
         id: 'recent',
         title: 'Vistas recientemente',
-        local: true,                       // sin red: se pinta al cargar y oculta si está vacía
-        load: () => getRecentlyViewed(),
+        local: true,
+        load: () => getRecentlyViewed().filter(m => (m.type ?? 'movie') === getMediaType()),
         refreshOn: ['recent:changed'],
         action: {
             label: 'Borrar',
-            ariaLabel: 'Borrar historial de películas vistas',
+            ariaLabel: 'Borrar historial',
             onClick: () => clearRecentlyViewed()
         }
     },
     {
         id: 'because',
-        title: 'Para ti',                   // se sustituye por "Porque te gustó X" al cargar
+        title: 'Para ti',
         load: loadBecauseYouLiked,
         refreshOn: ['favorites:changed']
     },
     {
         id: 'now_playing',
-        title: 'En cines',
-        endpoint: 'movie/now_playing'
-        // Opcional: params: { region: 'ES' } ajusta la fila a un país
+        title: () => (getMediaType() === 'tv' ? 'En emisión' : 'En cines'),
+        endpoint: () => (getMediaType() === 'tv' ? 'tv/on_the_air' : 'movie/now_playing')
     },
     {
-        // upcoming y now_playing se solapan casi por completo, por eso se usa discover
-        // con estrenos a partir de mañana: ninguna puede estar ya en cines
         id: 'upcoming',
-        title: 'Próximos estrenos',
-        endpoint: 'discover/movie',
-        // función: las fechas se calculan al pedir, no al cargar el archivo
-        params: () => ({
+        title: () => (getMediaType() === 'tv' ? 'Al aire hoy' : 'Próximos estrenos'),
+        endpoint: () => (getMediaType() === 'tv' ? 'tv/airing_today' : 'discover/movie'),
+        params: () => (getMediaType() === 'tv' ? {} : {
             'primary_release_date.gte': dateOffset(1),
             'primary_release_date.lte': dateOffset(180),
             sort_by: 'popularity.desc'
@@ -82,30 +79,17 @@ const HOME_ROWS = [
     {
         id: 'top_rated',
         title: 'Mejor valoradas',
-        endpoint: 'movie/top_rated'
+        endpoint: () => `${getMediaType()}/top_rated`
     }
 ];
 
-const HOME_ROW_LIMIT = 12;    // películas que se muestran en cada fila del home
-const HOME_ROW_SKELETONS = 8; // tarjetas de carga mientras llega la respuesta
+const HOME_ROW_LIMIT = 12;
+const HOME_ROW_SKELETONS = 8;
 
-const rowStates = new Map();    // id → estado de la fila
-const rowBySection = new Map(); // <section> → estado (para el observer)
+const rowStates = new Map();
+const rowBySection = new Map();
 
-function resolveRowParams(row) {
-    return typeof row.params === 'function' ? row.params() : row.params;
-}
-
-// Una sola petición por fila, y solo cuando la fila se acerca a la pantalla
-const homeRowsObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-
-        homeRowsObserver.unobserve(entry.target);
-        loadHomeRow(rowBySection.get(entry.target));
-    });
-}, { rootMargin: '300px 0px' });
-
+// ---------- Carga y renderizado de filas ----------
 function fillRowSkeletons(list) {
     list.innerHTML = '';
 
@@ -116,7 +100,6 @@ function fillRowSkeletons(list) {
     }
 }
 
-// silent = true: refresco en segundo plano; si falla, se conserva lo que ya hay
 async function loadHomeRow(state, silent = false) {
     const { row, list } = state;
 
@@ -125,20 +108,22 @@ async function loadHomeRow(state, silent = false) {
         if (row.load) {
             result = await row.load();
         } else {
-            const { data } = await api.get(row.endpoint, { params: resolveRowParams(row) });
-            result = data.results;
+            const endpoint = resolveRowEndpoint(row);
+            const { data } = await api.get(endpoint, { params: resolveRowParams(row) });
+            result = data.results.map(item => ({ ...item, type: getMediaType() }));
         }
 
         const isList = Array.isArray(result);
         const source = isList ? result : (result?.movies ?? []);
 
-        // En el home solo películas con póster; la lista completa ("Ver todas") no se filtra
         const movies = source
             .filter(movie => movie.poster_path)
             .slice(0, HOME_ROW_LIMIT);
 
         if (!isList && result?.title) {
             state.titleEl.textContent = result.title;
+        } else {
+            state.titleEl.textContent = resolveRowTitle(row);
         }
 
         state.loaded = true;
@@ -150,7 +135,6 @@ async function loadHomeRow(state, silent = false) {
             return;
         }
 
-        // Solo se redibuja si cambió el contenido: conserva el scroll de la fila
         const key = movies.map(movie => movie.id).join(',');
         if (key !== state.key) {
             state.key = key;
@@ -175,7 +159,6 @@ async function loadHomeRow(state, silent = false) {
     }
 }
 
-// Vuelve a calcular una fila ya cargada (si aún no se cargó, lo hará al acercarse)
 function refreshHomeRow(rowId) {
     const state = rowStates.get(rowId);
     if (state?.loaded) {
@@ -193,19 +176,19 @@ function createHomeRow(row) {
     const header = document.createElement('div');
     header.classList.add('homeRow-header');
 
+    const titleText = resolveRowTitle(row);
     const titleEl = document.createElement('h2');
     titleEl.classList.add('homeRow-title');
     titleEl.id = titleId;
-    titleEl.textContent = row.title;
+    titleEl.textContent = titleText;
     header.appendChild(titleEl);
 
-    // Botón del encabezado: "Ver todas" si hay endpoint, o la acción propia de la fila
     if (row.endpoint) {
         const moreBtn = document.createElement('button');
         moreBtn.type = 'button';
         moreBtn.classList.add('homeRow-btn');
         moreBtn.textContent = 'Ver todas';
-        moreBtn.setAttribute('aria-label', `Ver todas: ${row.title}`);
+        moreBtn.setAttribute('aria-label', `Ver todas: ${titleText}`);
         moreBtn.addEventListener('click', () => {
             location.hash = `#list=${row.id}`;
         });
@@ -224,9 +207,9 @@ function createHomeRow(row) {
     list.classList.add('homeRow-list');
 
     if (row.local) {
-        section.classList.add('is-empty'); // oculta hasta confirmar que hay contenido
+        section.classList.add('is-empty');
     } else {
-        fillRowSkeletons(list); // reserva la altura: así el observer no dispara todas las filas a la vez
+        fillRowSkeletons(list);
     }
 
     section.append(header, list);
@@ -238,10 +221,25 @@ function createHomeRow(row) {
     return section;
 }
 
+function getMoviesByRow(rowId) {
+    const row = HOME_ROWS.find(item => item.id === rowId);
+    return startPaginatedList(resolveRowEndpoint(row), resolveRowParams(row));
+}
+
+// ---------- Observador de visibilidad ----------
+const homeRowsObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+
+        homeRowsObserver.unobserve(entry.target);
+        loadHomeRow(rowBySection.get(entry.target));
+    });
+}, { rootMargin: '300px 0px' });
+
+// ---------- Inicialización y eventos ----------
 function buildHomeRows() {
     HOME_ROWS.forEach(row => homeRowsContainer.appendChild(createHomeRow(row)));
 
-    // Se observa (o se carga) cuando todas ya están en el DOM
     rowStates.forEach(state => {
         if (state.row.local) {
             loadHomeRow(state);
@@ -250,7 +248,6 @@ function buildHomeRows() {
         }
     });
 
-    // Filas que se recalculan cuando cambian sus datos
     HOME_ROWS.forEach(row => {
         (row.refreshOn ?? []).forEach(eventName => {
             window.addEventListener(eventName, () => refreshHomeRow(row.id));
@@ -258,11 +255,19 @@ function buildHomeRows() {
     });
 }
 
-// Para la vista "Ver todas" (#list=<id>): lista completa con la paginación existente
-function getMoviesByRow(rowId) {
-    const row = HOME_ROWS.find(item => item.id === rowId);
-    return startPaginatedList(row.endpoint, resolveRowParams(row));
+function handleMediaTypeChangedInRows() {
+    becauseSource = null;
+    becauseCache = null;
+
+    rowStates.forEach(state => {
+        state.key = '';
+        state.titleEl.textContent = resolveRowTitle(state.row);
+        if (!state.row.local) {
+            fillRowSkeletons(state.list);
+        }
+        loadHomeRow(state, true);
+    });
 }
 
-// DOMContentLoaded se dispara con todos los scripts ya cargados
+window.addEventListener('mediatype:changed', handleMediaTypeChangedInRows);
 window.addEventListener('DOMContentLoaded', buildHomeRows);

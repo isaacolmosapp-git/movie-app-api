@@ -1,9 +1,3 @@
-// Router y navegación principal.
-//
-// Cargar al final, después de pagination.js, rows.js y people.js.
-// Requiere los nodos de nodes.js y las funciones de carga de main.js, pagination.js,
-// rows.js (HOME_ROWS, getMoviesByRow), people.js (getPopularPeople) y favorites.js.
-
 // ---------- Eventos del header ----------
 searchFormBtn.addEventListener('click', (event) => {
     event.preventDefault();
@@ -19,14 +13,13 @@ trendingBtn.addEventListener('click', () => {
     location.hash = '#trends';
 });
 
-// Profundidad de navegación dentro de la app (0 = la entrada con la que se cargó la página)
 let currentDepth = history.state?.depth ?? 0;
 
 function syncDepth() {
     if (typeof history.state?.depth === 'number') {
-        currentDepth = history.state.depth; // volvió o avanzó a una entrada ya conocida
+        currentDepth = history.state.depth;
     } else {
-        currentDepth += 1;                  // entrada nueva
+        currentDepth += 1;
         history.replaceState({ depth: currentDepth }, '');
     }
 }
@@ -37,13 +30,11 @@ arrowBtn.addEventListener('click', () => {
     if (currentDepth > 0) {
         history.back();
     } else {
-        location.hash = '#home'; // la página se abrió directamente en esta vista
+        location.hash = '#home';
     }
 });
 
 // ---------- Navegación principal ----------
-// Barra inferior en móvil y enlaces en el header en escritorio: mismos destinos,
-// dos contenedores (el CSS muestra uno u otro).
 const NAV_ITEMS = [
     {
         id: 'home',
@@ -81,7 +72,6 @@ function renderNav(container) {
         link.dataset.tab = item.id;
         link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${item.icon}</svg><span>${item.label}</span>`;
 
-        // Pulsar la pestaña en la que ya estás (en su pantalla principal) sube al inicio
         link.addEventListener('click', event => {
             const isCurrent = link.getAttribute('aria-current') === 'page';
             if (isCurrent && !location.hash.includes('=')) {
@@ -108,13 +98,6 @@ function setActiveTab(tabId) {
 }
 
 // ---------- Tabla de vistas ----------
-// sections:      qué secciones se muestran (el resto se oculta); arreglo o función del valor
-// header:        'brand' = logo, 'title' = título de la vista, 'none' = ninguno
-// arrow/search:  booleano, o función del valor del hash
-// searchOnMobile: el buscador del header solo se ve en móvil en la vista de búsqueda
-// tab:           pestaña resaltada (null = ninguna)
-// long:          conserva la clase header-container--long del detalle
-// enter(value):  carga los datos de la vista; value es lo que va tras "=" en el hash
 const allSections = [
     trendingPreviewSection,
     categoriesPreviewSection,
@@ -135,7 +118,6 @@ function setHeaderTitle(text) {
     headerCategoryTitle.textContent = text;
 }
 
-// "28-Acción" → { id: '28', name: 'Acción' }; solo se parte en el primer guion
 function parseIdName(value) {
     const dash = value.indexOf('-');
     if (dash === -1) return { id: value, name: '' };
@@ -146,10 +128,9 @@ function parseIdName(value) {
     };
 }
 
-// Mensaje dentro de la lista genérica (búsqueda vacía, sin favoritos...)
 function showGenericMessage(text) {
     cancelPaginatedList();
-    createMovies([], genericSection); // vacía la sección y libera el observer de imágenes
+    createMovies([], genericSection);
 
     const message = document.createElement('p');
     message.classList.add('genericList-empty');
@@ -198,11 +179,11 @@ const VIEWS = {
             const row = HOME_ROWS.find(item => item.id === rowId);
 
             if (!row || !row.endpoint) {
-                location.hash = '#home'; // fila que no existe o sin lista completa
+                location.hash = '#home';
                 return;
             }
 
-            setHeaderTitle(row.title);
+            setHeaderTitle(resolveRowTitle(row));
             getMoviesByRow(rowId);
         }
     },
@@ -221,10 +202,9 @@ const VIEWS = {
     },
 
     search: {
-        // Sin texto: panel con recientes y categorías. Con texto: resultados.
         sections: value => (value ? [genericSection] : [searchPanelSection]),
         header: 'none',
-        arrow: value => Boolean(value), // sin flecha en la pestaña, con flecha en los resultados
+        arrow: value => Boolean(value),
         search: true,
         searchOnMobile: true,
         tab: 'search',
@@ -234,11 +214,10 @@ const VIEWS = {
                 searchFormInput.value = query;
                 getMoviesBySearch(query);
             } else {
-                cancelPaginatedList(); // el panel no usa la lista paginada
+                cancelPaginatedList();
                 searchFormInput.value = '';
                 renderSearchPanel();
 
-                // En móvil, enfocar abriría el teclado y taparía el panel
                 if (window.matchMedia('(min-width: 720px)').matches) {
                     searchFormInput.focus();
                 }
@@ -259,7 +238,6 @@ const VIEWS = {
     },
 
     person: {
-        // Cabecera con biografía + filmografía (en genericSection) del rol elegido
         sections: [personInfoSection, genericSection],
         header: 'none',
         arrow: true,
@@ -283,7 +261,6 @@ const VIEWS = {
         }
     },
 
-    // Favoritos es una lista más de la Biblioteca
     favorites: {
         sections: [genericSection],
         header: 'title',
@@ -303,7 +280,7 @@ const VIEWS = {
         search: false,
         tab: 'library',
         enter: listId => {
-            showList(listId); // pone el título de la lista; si no existe, vuelve a la Biblioteca
+            showList(listId);
         }
     },
 
@@ -315,13 +292,25 @@ const VIEWS = {
         tab: null,
         long: true,
         enter: movieId => {
-            getMovieById(movieId);
-            getRelatedMoviesById(movieId);
+            getMovieById(movieId, 'movie');
+            getRelatedMoviesById(movieId, 'movie');
+        }
+    },
+
+    tv: {
+        sections: [movieDetailSection],
+        header: 'none',
+        arrow: true,
+        search: false,
+        tab: null,
+        long: true,
+        enter: tvId => {
+            getMovieById(tvId, 'tv');
+            getRelatedMoviesById(tvId, 'tv');
         }
     }
 };
 
-// Los enlaces del reparto y de Personas usan #actor=<id>-<nombre>; apuntan a la misma ficha
 VIEWS.actor = VIEWS.person;
 
 // ---------- Router ----------
@@ -344,6 +333,10 @@ function applyView(view, value) {
     headerCategoryTitle.classList.toggle('inactive', view.header !== 'title');
     searchForm.classList.toggle('inactive', !resolve(view.search, value));
 
+    if (mediaTypeSwitcher) {
+        mediaTypeSwitcher.classList.toggle('inactive', view !== VIEWS.home);
+    }
+
     const visibleSections = resolve(view.sections, value);
     allSections.forEach(section => {
         section.classList.toggle('inactive', !visibleSections.includes(section));
@@ -352,6 +345,41 @@ function applyView(view, value) {
     setActiveTab(view.tab);
 }
 
+// ---------- Switcher de tipo de contenido ----------
+function updateMediaTypeSwitcherUI() {
+    if (!mediaTypeBtns) return;
+    const current = getMediaType();
+    mediaTypeBtns.forEach(btn => {
+        const isActive = btn.dataset.type === current;
+        btn.setAttribute('aria-pressed', String(isActive));
+    });
+}
+
+function initMediaTypeSwitcher() {
+    if (!mediaTypeBtns) return;
+    updateMediaTypeSwitcherUI();
+
+    mediaTypeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetType = btn.dataset.type;
+            if (targetType && targetType !== getMediaType()) {
+                setMediaType(targetType);
+            }
+        });
+    });
+}
+
+initMediaTypeSwitcher();
+
+window.addEventListener('mediatype:changed', () => {
+    updateMediaTypeSwitcherUI();
+    if (currentViewName === 'home') {
+        getTrendingMoviesPreview();
+        getCategoriesPreview();
+    }
+});
+
+// ---------- Inicialización y eventos de navegación ----------
 let currentViewName = null;
 
 function navigator() {
@@ -369,7 +397,6 @@ function navigator() {
 window.addEventListener('DOMContentLoaded', navigator, false);
 window.addEventListener('hashchange', navigator, false);
 
-// Si se quita un favorito mientras se ve la lista de favoritos, la lista se actualiza
 window.addEventListener('favorites:changed', () => {
     if (currentViewName === 'favorites') {
         renderFavoritesView();

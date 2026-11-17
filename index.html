@@ -17,6 +17,10 @@
     <span class="header-arrow inactive">&lt;</span>
     <h1 class="header-title">MovieApp</h1>
     <h1 class="header-title header-title--categoryView inactive">Acción</h1>
+    <div id="mediaTypeSwitcher" class="mediaType-switcher inactive" role="group" aria-label="Tipo de contenido">
+      <button type="button" class="mediaType-btn" data-type="movie">Películas</button>
+      <button type="button" class="mediaType-btn" data-type="tv">Series</button>
+    </div>
     <nav id="navDesktop" class="main-nav main-nav--desktop" aria-label="Principal"></nav>
     <form id="searchForm" class="header-searchForm">
       <input type="text" placeholder="Vengadores" />
@@ -102,7 +106,8 @@
 
   <section id="genericList" class="genericList-container inactive">
     <div class="movie-container">
-      <!-- Iyeccion de peliculas por categoria -->
+      <!-- inyeccion de peliculas por categoria -->
+    </div>
   </section>
 
   <section id="peopleSection" class="people-container inactive">
